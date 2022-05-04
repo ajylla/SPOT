@@ -26,41 +26,17 @@ class Event:
         self.load_all_viewing()
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
-                  autodownload=False):
+                  autodownload=True):
 
-        try:
+        df_i, df_e, energs = epd_load(sensor=sensor,
+                                      viewing=viewing,
+                                      level=data_level,
+                                      startdate=self.start_date,
+                                      enddate=self.end_date,
+                                      path=self.data_path,
+                                      autodownload=autodownload)
 
-            df_i, df_e, energs = epd_load(sensor=sensor,
-                                          viewing=viewing,
-                                          level=data_level,
-                                          startdate=self.start_date,
-                                          enddate=self.end_date,
-                                          path=self.data_path,
-                                          autodownload=autodownload)
-
-            return df_i, df_e, energs
-
-        except Exception:
-
-            warnings.warn(f"No data found for {viewing} viewing "
-                          f"direction. Starting download.")
-
-            try:
-
-                df_i, df_e, energs = epd_load(sensor=sensor,
-                                              viewing=viewing,
-                                              level=data_level,
-                                              startdate=self.start_date,
-                                              enddate=self.end_date,
-                                              path=self.data_path,
-                                              autodownload=True)
-
-                return df_i, df_e, energs
-
-            except Exception:
-
-                warnings.warn(f"There was a connection problem. Skipping "
-                              f"{viewing} viewing direction.")
+        return df_i, df_e, energs
 
     def load_all_viewing(self):
 
@@ -355,7 +331,7 @@ class Event:
         date = flux_series.index
         ma = ma_sigma[0]
         sigma = ma_sigma[1]
-        md = ma + 2*sigma
+        md = ma + self.x_sigma*sigma
 
         # k may get really big if sigma is large in comparison to mean
         try:
@@ -505,7 +481,7 @@ class Event:
         # background mean + 2*std
         ax.axhline(onset_stats[1], linewidth=2,
                    color=color_dict['bg_mean'], linestyle=':',
-                   label="Std of background")
+                   label=f"Mean + {str(self.x_sigma)} * std of background")
 
         # Background shaded area
         ax.axvspan(avg_start, avg_end, color=color_dict['bg'],
@@ -587,11 +563,12 @@ class Event:
         return flux_series, onset_stats, onset_found
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
-                channels=[0, 1], yscale='log', cusum_window=30):
+                channels=[0, 1], yscale='log', cusum_window=30, x_sigma=2):
 
         self.viewing_used = viewing
         self.choose_data(viewing)
         self.averaging_used = resample_period
+        self.x_sigma = x_sigma
 
         if(self.spacecraft == 'solo'):
 
