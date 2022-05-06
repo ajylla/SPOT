@@ -578,7 +578,7 @@ class Event:
 
                     df_flux, en_channel_string =\
                             self.calc_av_en_flux_HET(self.current_df_i,
-                                                     self.energies,
+                                                     self.current_energies,
                                                      channels)
                 elif(self.species == 'e'):
 
@@ -592,7 +592,7 @@ class Event:
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_EPT(self.current__df_i,
+                            self.calc_av_en_flux_EPT(self.current_df_i,
                                                      self.current_energies,
                                                      channels)
                 elif(self.species == 'e'):
