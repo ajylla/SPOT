@@ -558,9 +558,10 @@ class Event:
         ax.add_artist(blabel)
         ax.add_artist(eslabel)
 
+        plt.tight_layout()
         plt.show()
 
-        return flux_series, onset_stats, onset_found
+        return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, x_sigma=2):
@@ -610,6 +611,7 @@ class Event:
 
             df_averaged = df_flux
 
-        flux_series, onset_stats, onset_found =\
+        flux_series, onset_stats, onset_found, peak_flux, peak_time, fig =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
-                                   en_channel_string, yscale=yscale, cusum_window=cusum_window)
+                                   en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+        return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig
