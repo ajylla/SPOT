@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from solo_epd_loader import epd_load
+from stereo_loader import stereo_load, calc_av_en_flux_SEPT
 from matplotlib.offsetbox import AnchoredText
 import datetime
 import matplotlib.ticker as ticker
@@ -28,15 +29,48 @@ class Event:
     def load_data(self, spacecraft, sensor, viewing, data_level,
                   autodownload=True):
 
-        df_i, df_e, energs = epd_load(sensor=sensor,
-                                      viewing=viewing,
-                                      level=data_level,
-                                      startdate=self.start_date,
-                                      enddate=self.end_date,
-                                      path=self.data_path,
-                                      autodownload=autodownload)
+        if(self.spacecraft == 'solo'):
+            df_i, df_e, energs = epd_load(sensor=sensor,
+                                          viewing=viewing,
+                                          level=data_level,
+                                          startdate=self.start_date,
+                                          enddate=self.end_date,
+                                          path=self.data_path,
+                                          autodownload=autodownload)
 
-        return df_i, df_e, energs
+            return df_i, df_e, energs
+
+        if(self.spacecraft[:2].lower() == 'st'):
+            if(self.sensor == 'sept'):
+                df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
+                                                    startdate=self.start_date,
+                                                    enddate=self.end_date,
+                                                    spacecraft=self.spacecraft,
+                                                    # sept_species=self.species,
+                                                    sept_species='p',
+                                                    sept_viewing=viewing,
+                                                    resample=None,
+                                                    path=self.data_path)
+
+                df_e, channels_dict_df_e = stereo_load(instrument=self.sensor,
+                                                    startdate=self.start_date,
+                                                    enddate=self.end_date,
+                                                    spacecraft=self.spacecraft,
+                                                    # sept_species=self.species,
+                                                    sept_species='e',
+                                                    sept_viewing=viewing,
+                                                    resample=None,
+                                                    path=self.data_path)
+
+                return df_i, df_e, channels_dict_df_i, channels_dict_df_e
+            if(self.sensor == 'het'):
+                df, meta = stereo_load(instrument=self.sensor,
+                                       startdate=self.start_date,
+                                       enddate=self.end_date,
+                                       spacecraft=self.spacecraft,
+                                       resample=None,
+                                       path=self.data_path)
+                return df, meta
 
     def load_all_viewing(self):
 
@@ -66,31 +100,87 @@ class Event:
                     self.load_data(self.spacecraft, self.sensor, 'None',
                                    self.data_level)
 
+        if(self.spacecraft[:2].lower() == 'st'):
+
+            if(self.sensor == 'sept'):
+
+                self.df_i_sun, self.df_e_sun, self.energies_i_sun, self.energies_e_sun =\
+                    self.load_data(self.spacecraft, self.sensor,
+                                   'sun', self.data_level)
+
+                self.df_i_asun, self.df_e_asun, self.energies_i_asun, self.energies_e_asun =\
+                    self.load_data(self.spacecraft, self.sensor,
+                                   'asun', self.data_level)
+
+                self.df_i_north, self.df_e_north, self.energies_i_north, self.energies_e_north =\
+                    self.load_data(self.spacecraft, self.sensor,
+                                   'north', self.data_level)
+
+                self.df_i_south, self.df_e_south, self.energies_i_south, self.energies_e_south =\
+                    self.load_data(self.spacecraft, self.sensor,
+                                   'south', self.data_level)
+
+            elif(self.sensor == 'het'):
+
+                self.df_het, self.meta_het =\
+                    self.load_data(self.spacecraft, self.sensor, 'None',
+                                   self.data_level)
+
     def choose_data(self, viewing):
 
-        if(viewing == 'sun'):
+        if(self.spacecraft == 'solo'):
+            if(viewing == 'sun'):
 
-            self.current_df_i = self.df_i_sun
-            self.current_df_e = self.df_e_sun
-            self.current_energies = self.energies_sun
+                self.current_df_i = self.df_i_sun
+                self.current_df_e = self.df_e_sun
+                self.current_energies = self.energies_sun
 
-        elif(viewing == 'asun'):
+            elif(viewing == 'asun'):
 
-            self.current_df_i = self.df_i_asun
-            self.current_df_e = self.df_e_asun
-            self.current_energies = self.energies_asun
+                self.current_df_i = self.df_i_asun
+                self.current_df_e = self.df_e_asun
+                self.current_energies = self.energies_asun
 
-        elif(viewing == 'north'):
+            elif(viewing == 'north'):
 
-            self.current_df_i = self.df_i_north
-            self.current_df_e = self.df_e_north
-            self.current_energies = self.energies_north
+                self.current_df_i = self.df_i_north
+                self.current_df_e = self.df_e_north
+                self.current_energies = self.energies_north
 
-        elif(viewing == 'south'):
+            elif(viewing == 'south'):
 
-            self.current_df_i = self.df_i_south
-            self.current_df_e = self.df_e_south
-            self.current_energies = self.energies_south
+                self.current_df_i = self.df_i_south
+                self.current_df_e = self.df_e_south
+                self.current_energies = self.energies_south
+
+        if(self.spacecraft[:2].lower() == 'st'):
+            if(viewing == 'sun'):
+
+                self.current_df_i = self.df_i_sun
+                self.current_df_e = self.df_e_sun
+                self.current_i_energies = self.energies_i_sun
+                self.current_e_energies = self.energies_e_sun
+
+            elif(viewing == 'asun'):
+
+                self.current_df_i = self.df_i_asun
+                self.current_df_e = self.df_e_asun
+                self.current_i_energies = self.energies_i_asun
+                self.current_e_energies = self.energies_e_asun
+
+            elif(viewing == 'north'):
+
+                self.current_df_i = self.df_i_north
+                self.current_df_e = self.df_e_north
+                self.current_i_energies = self.energies_i_north
+                self.current_e_energies = self.energies_e_north
+
+            elif(viewing == 'south'):
+
+                self.current_df_i = self.df_i_south
+                self.current_df_e = self.df_e_south
+                self.current_i_energies = self.energies_i_south
+                self.current_e_energies = self.energies_e_south
 
     def calc_av_en_flux_HET(self, df, energies, en_channel):
 
@@ -410,7 +500,10 @@ class Event:
             'bg':         '#de8585'
         }
 
-        flux_series = df_flux[channel]
+        if(self.spacecraft == 'solo'):
+            flux_series = df_flux[channel]
+        if(self.spacecraft[:2].lower() == 'st'):
+            flux_series = df_flux  # [channel]
         date = flux_series.index
 
         if ylim is None:
@@ -439,7 +532,10 @@ class Event:
 
             onset_found = True
 
-        df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
+        if(self.spacecraft == 'solo'):
+            df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
+        if(self.spacecraft[:2].lower() == 'st'):
+            df_flux_peak = df_flux[df_flux == df_flux.max()]
         self.print_info("Flux peak", df_flux_peak)
         self.print_info("Onset time", onset_stats[-1])
         self.print_info("Mean of background intensity",
@@ -600,6 +696,38 @@ class Event:
                     df_flux, en_channel_string =\
                             self.calc_av_en_flux_EPT(self.current_df_e,
                                                      self.current_energies,
+                                                     channels)
+
+        if(self.spacecraft[:2] == 'st'):
+
+            if(self.sensor == 'het'):
+
+                if(self.species in ['p', 'i']):
+
+                    df_flux, en_channel_string =\
+                            self.calc_av_en_flux_HET(self.current_df_i,
+                                                     self.current_i_energies,
+                                                     channels)
+                elif(self.species == 'e'):
+
+                    df_flux, en_channel_string =\
+                            self.calc_av_en_flux_HET(self.current_df_e,
+                                                     self.current_e_energies,
+                                                     channels)
+
+            elif(self.sensor == 'sept'):
+
+                if(self.species in ['p', 'i']):
+
+                    df_flux, en_channel_string =\
+                            calc_av_en_flux_SEPT(self.current_df_i,
+                                                     self.current_i_energies,
+                                                     channels)
+                elif(self.species == 'e'):
+
+                    df_flux, en_channel_string =\
+                            calc_av_en_flux_SEPT(self.current_df_e,
+                                                     self.current_e_energies,
                                                      channels)
 
         if(resample_period is not None):
