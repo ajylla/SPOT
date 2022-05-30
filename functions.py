@@ -563,7 +563,7 @@ class Event:
         return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
-                channels=[0, 1], yscale='log', cusum_window=30, x_sigma=2):
+                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
         self.viewing_used = viewing
         self.choose_data(viewing)
