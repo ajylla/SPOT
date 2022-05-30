@@ -557,7 +557,6 @@ class Event:
         ax.add_artist(plabel)
         ax.add_artist(blabel)
         ax.add_artist(eslabel)
-
         plt.tight_layout()
         plt.show()
 
