@@ -26,17 +26,41 @@ class Event:
         self.load_all_viewing()
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
-                  autodownload=True):
+                  autodownload=False):
 
-        df_i, df_e, energs = epd_load(sensor=sensor,
-                                      viewing=viewing,
-                                      level=data_level,
-                                      startdate=self.start_date,
-                                      enddate=self.end_date,
-                                      path=self.data_path,
-                                      autodownload=autodownload)
+        try:
 
-        return df_i, df_e, energs
+            df_i, df_e, energs = epd_load(sensor=sensor,
+                                          viewing=viewing,
+                                          level=data_level,
+                                          startdate=self.start_date,
+                                          enddate=self.end_date,
+                                          path=self.data_path,
+                                          autodownload=autodownload)
+
+            return df_i, df_e, energs
+
+        except Exception:
+
+            warnings.warn(f"No data found for {viewing} viewing "
+                          f"direction. Starting download.")
+
+            try:
+
+                df_i, df_e, energs = epd_load(sensor=sensor,
+                                              viewing=viewing,
+                                              level=data_level,
+                                              startdate=self.start_date,
+                                              enddate=self.end_date,
+                                              path=self.data_path,
+                                              autodownload=True)
+
+                return df_i, df_e, energs
+
+            except Exception:
+
+                warnings.warn(f"There was a connection problem. Skipping "
+                              f"{viewing} viewing direction.")
 
     def load_all_viewing(self):
 
@@ -331,7 +355,7 @@ class Event:
         date = flux_series.index
         ma = ma_sigma[0]
         sigma = ma_sigma[1]
-        md = ma + self.x_sigma*sigma
+        md = ma + 2*sigma
 
         # k may get really big if sigma is large in comparison to mean
         try:
@@ -481,7 +505,7 @@ class Event:
         # background mean + 2*std
         ax.axhline(onset_stats[1], linewidth=2,
                    color=color_dict['bg_mean'], linestyle=':',
-                   label=f"Mean + {str(self.x_sigma)} * std of background")
+                   label="Std of background")
 
         # Background shaded area
         ax.axvspan(avg_start, avg_end, color=color_dict['bg'],
@@ -557,18 +581,17 @@ class Event:
         ax.add_artist(plabel)
         ax.add_artist(blabel)
         ax.add_artist(eslabel)
-
+        plt.tight_layout()
         plt.show()
 
-        return flux_series, onset_stats, onset_found
+        return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
-                channels=[0, 1], yscale='log', cusum_window=30, x_sigma=2):
+                channels=[0, 1], yscale='log', cusum_window=30, xlim=None):
 
         self.viewing_used = viewing
         self.choose_data(viewing)
         self.averaging_used = resample_period
-        self.x_sigma = x_sigma
 
         if(self.spacecraft == 'solo'):
 
@@ -592,7 +615,7 @@ class Event:
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_EPT(self.current_df_i,
+                            self.calc_av_en_flux_EPT(self.current__df_i,
                                                      self.current_energies,
                                                      channels)
                 elif(self.species == 'e'):
@@ -610,6 +633,8 @@ class Event:
 
             df_averaged = df_flux
 
-        flux_series, onset_stats, onset_found =\
+        flux_series, onset_stats, onset_found, peak_flux, peak_time, fig =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
-                                   en_channel_string, yscale=yscale, cusum_window=cusum_window)
+                                   en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+
+        return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig
