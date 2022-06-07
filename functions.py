@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from solo_epd_loader import epd_load
 from stereo_loader import stereo_load, calc_av_en_flux_SEPT
+from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
 from matplotlib.offsetbox import AnchoredText
 import datetime
 import matplotlib.ticker as ticker
@@ -125,6 +126,9 @@ class Event:
                 self.df_het, self.meta_het =\
                     self.load_data(self.spacecraft, self.sensor, 'None',
                                    self.data_level)
+                self.current_df_i = self.df_het.filter(like='Proton')
+                self.current_df_e = self.df_het.filter(like='Electron')
+                self.current_energies = self.meta_het
 
     def choose_data(self, viewing):
 
@@ -154,33 +158,34 @@ class Event:
                 self.current_energies = self.energies_south
 
         if(self.spacecraft[:2].lower() == 'st'):
-            if(viewing == 'sun'):
+            if(self.sensor == 'sept'):
+                if(viewing == 'sun'):
 
-                self.current_df_i = self.df_i_sun
-                self.current_df_e = self.df_e_sun
-                self.current_i_energies = self.energies_i_sun
-                self.current_e_energies = self.energies_e_sun
+                    self.current_df_i = self.df_i_sun
+                    self.current_df_e = self.df_e_sun
+                    self.current_i_energies = self.energies_i_sun
+                    self.current_e_energies = self.energies_e_sun
 
-            elif(viewing == 'asun'):
+                elif(viewing == 'asun'):
 
-                self.current_df_i = self.df_i_asun
-                self.current_df_e = self.df_e_asun
-                self.current_i_energies = self.energies_i_asun
-                self.current_e_energies = self.energies_e_asun
+                    self.current_df_i = self.df_i_asun
+                    self.current_df_e = self.df_e_asun
+                    self.current_i_energies = self.energies_i_asun
+                    self.current_e_energies = self.energies_e_asun
 
-            elif(viewing == 'north'):
+                elif(viewing == 'north'):
 
-                self.current_df_i = self.df_i_north
-                self.current_df_e = self.df_e_north
-                self.current_i_energies = self.energies_i_north
-                self.current_e_energies = self.energies_e_north
+                    self.current_df_i = self.df_i_north
+                    self.current_df_e = self.df_e_north
+                    self.current_i_energies = self.energies_i_north
+                    self.current_e_energies = self.energies_e_north
 
-            elif(viewing == 'south'):
+                elif(viewing == 'south'):
 
-                self.current_df_i = self.df_i_south
-                self.current_df_e = self.df_e_south
-                self.current_i_energies = self.energies_i_south
-                self.current_e_energies = self.energies_e_south
+                    self.current_df_i = self.df_i_south
+                    self.current_df_e = self.df_e_south
+                    self.current_i_energies = self.energies_i_south
+                    self.current_e_energies = self.energies_e_south
 
     def calc_av_en_flux_HET(self, df, energies, en_channel):
 
@@ -622,10 +627,16 @@ class Event:
         # Onset label
         if(onset_found):
 
-            plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
-                                  f"Peak flux: {df_flux_peak['flux'][0]:.2f}",
-                                  prop=dict(size=13), frameon=True,
-                                  loc=(4))
+            if(self.spacecraft == 'solo'):
+                plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
+                                      f"Peak flux: {df_flux_peak['flux'][0]:.2f}",
+                                      prop=dict(size=13), frameon=True,
+                                      loc=(4))
+            if(self.spacecraft[:2].lower() == 'st'):
+                plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
+                                      f"Peak flux: {df_flux_peak.values[0]:.2f}",
+                                      prop=dict(size=13), frameon=True,
+                                      loc=(4))
 
         else:
 
@@ -661,8 +672,12 @@ class Event:
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
-        self.viewing_used = viewing
-        self.choose_data(viewing)
+        if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') or (self.spacecraft.lower() == 'solo'):
+            self.viewing_used = viewing
+            self.choose_data(viewing)
+        elif (self.spacecraft[:2].lower() == 'st' and self.sensor == 'het'):
+            self.viewing_used = ''
+
         self.averaging_used = resample_period
         self.x_sigma = x_sigma
 
@@ -705,15 +720,17 @@ class Event:
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_HET(self.current_df_i,
-                                                     self.current_i_energies,
-                                                     channels)
+                            calc_av_en_flux_ST_HET(self.current_df_i,
+                                                    self.current_energies['channels_dict_df_p'],
+                                                    channels,
+                                                    species='p')
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_HET(self.current_df_e,
-                                                     self.current_e_energies,
-                                                     channels)
+                            calc_av_en_flux_ST_HET(self.current_df_e,
+                                                    self.current_energies['channels_dict_df_e'],
+                                                    channels,
+                                                    species='e')
 
             elif(self.sensor == 'sept'):
 
@@ -721,14 +738,14 @@ class Event:
 
                     df_flux, en_channel_string =\
                             calc_av_en_flux_SEPT(self.current_df_i,
-                                                     self.current_i_energies,
-                                                     channels)
+                                                 self.current_i_energies,
+                                                 channels)
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
                             calc_av_en_flux_SEPT(self.current_df_e,
-                                                     self.current_e_energies,
-                                                     channels)
+                                                 self.current_e_energies,
+                                                 channels)
 
         if(resample_period is not None):
 
