@@ -415,7 +415,9 @@ class Event:
 
         return [mean_value, sigma]
 
-    def onset_determination(self, ma_sigma, flux_series, cusum_window):
+    def onset_determination(self, ma_sigma, flux_series, cusum_window, bg_end_time):
+        
+        flux_series = flux_series[bg_end_time:]
 
         # assert date and the starting index of the averaging process
         date = flux_series.index
@@ -526,7 +528,7 @@ class Event:
                                               flux_series)
         onset_stats =\
             self.onset_determination(background_stats, flux_series,
-                                        cusum_window)
+                                        cusum_window, avg_end)
 
         if not isinstance(onset_stats[-1], pd._libs.tslibs.nattype.NaTType):
 
