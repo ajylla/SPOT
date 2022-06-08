@@ -487,7 +487,7 @@ class Event:
 
     def onset_analysis(self, df_flux, windowstart, windowlen, channels_dict,
                           channel='flux', cusum_window=30, yscale='log',
-                          ylim=None, xlim=None):
+                          ylim=None, xlim=None, shrink=0):
 
         self.print_info("Energy channels", channels_dict)
         spacecraft = self.spacecraft.upper()
@@ -533,9 +533,9 @@ class Event:
             onset_found = True
 
         if(self.spacecraft == 'solo'):
-            df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
+            df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink][channel] == df_flux[0+shrink: -1-shrink][channel].max()]
         if(self.spacecraft[:2].lower() == 'st'):
-            df_flux_peak = df_flux[df_flux == df_flux.max()]
+            df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink] == df_flux[0+shrink: -1-shrink].max()]
         self.print_info("Flux peak", df_flux_peak)
         self.print_info("Onset time", onset_stats[-1])
         self.print_info("Mean of background intensity",
@@ -622,8 +622,15 @@ class Event:
         # Onset label
         if(onset_found):
 
+            '''
             plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
                                   f"Peak flux: {df_flux_peak['flux'][0]:.2f}",
+                                  prop=dict(size=13), frameon=True,
+                                  loc=(4))
+            '''
+            
+            plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
+                                  f"Peak flux: {float(df_flux_peak.values[0]):.2f}",
                                   prop=dict(size=13), frameon=True,
                                   loc=(4))
 
@@ -659,7 +666,7 @@ class Event:
         return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
-                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
+                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2, shrink=0):
 
         self.viewing_used = viewing
         self.choose_data(viewing)
@@ -740,5 +747,5 @@ class Event:
 
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
-                                   en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+                                   en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim, shrink=shrink)
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig
