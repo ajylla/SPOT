@@ -70,6 +70,7 @@ class Event:
                                        enddate=self.end_date,
                                        spacecraft=self.spacecraft,
                                        resample=None,
+                                       pos_timestamp='center',
                                        path=self.data_path)
                 return df, meta
 
@@ -551,7 +552,7 @@ class Event:
         plt.rcParams['axes.linewidth'] = 1.5
         plt.rcParams['font.size'] = 16
         fig, ax = plt.subplots()
-        ax.plot(flux_series.index, flux_series.values, ds='steps')
+        ax.plot(flux_series.index, flux_series.values, ds='steps-mid')
 
         # CUSUM and norm datapoints in plots.
         '''
