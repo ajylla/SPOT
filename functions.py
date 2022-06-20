@@ -45,24 +45,23 @@ class Event:
         if(self.spacecraft[:2].lower() == 'st'):
             if(self.sensor == 'sept'):
                 df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
-                                                    startdate=self.start_date,
-                                                    enddate=self.end_date,
-                                                    spacecraft=self.spacecraft,
-                                                    # sept_species=self.species,
-                                                    sept_species='p',
-                                                    sept_viewing=viewing,
-                                                    resample=None,
-                                                    path=self.data_path)
+                                                       enddate=self.end_date,
+                                                       spacecraft=self.spacecraft,
+                                                       # sept_species=self.species,
+                                                       sept_species='p',
+                                                       sept_viewing=viewing,
+                                                       resample=None,
+                                                       path=self.data_path)
 
                 df_e, channels_dict_df_e = stereo_load(instrument=self.sensor,
-                                                    startdate=self.start_date,
-                                                    enddate=self.end_date,
-                                                    spacecraft=self.spacecraft,
-                                                    # sept_species=self.species,
-                                                    sept_species='e',
-                                                    sept_viewing=viewing,
-                                                    resample=None,
-                                                    path=self.data_path)
+                                                       startdate=self.start_date,
+                                                       enddate=self.end_date,
+                                                       spacecraft=self.spacecraft,
+                                                       # sept_species=self.species,
+                                                       sept_species='e',
+                                                       sept_viewing=viewing,
+                                                       resample=None,
+                                                       path=self.data_path)
 
                 return df_i, df_e, channels_dict_df_i, channels_dict_df_e
             if(self.sensor == 'het'):
@@ -74,7 +73,7 @@ class Event:
                                        pos_timestamp='center',
                                        path=self.data_path)
                 return df, meta
-        
+
         if(self.spacecraft[:2].lower() == 'soho'):
             if(self.sensor == 'erne'):
                 df, meta = soho_load(dataset="SOHO_ERNE-HED_L2-1MIN",
@@ -84,7 +83,6 @@ class Event:
                                      resample=None,
                                      pos_timestamp='center')
                 return df, meta
-
 
     def load_all_viewing(self):
 
@@ -142,7 +140,7 @@ class Event:
                 self.current_df_i = self.df_het.filter(like='Proton')
                 self.current_df_e = self.df_het.filter(like='Electron')
                 self.current_energies = self.meta_het
-        
+
         if(self.spacecraft[:2].lower() == 'soho'):
 
             if(self.sensor.lower == 'erne'):
@@ -347,7 +345,7 @@ class Event:
 
             if species not in ['e', 'electrons', 'p', 'i', 'protons', 'ions']:
 
-                raise ValueError("species not defined. Must by one of 'e',"\
+                raise ValueError("species not defined. Must by one of 'e',"
                                  "'electrons', 'p', 'i', 'protons', 'ions'")
 
         except ValueError as error:
@@ -445,7 +443,7 @@ class Event:
         return [mean_value, sigma]
 
     def onset_determination(self, ma_sigma, flux_series, cusum_window, bg_end_time):
-        
+
         flux_series = flux_series[bg_end_time:]
 
         # assert date and the starting index of the averaging process
@@ -517,8 +515,8 @@ class Event:
         return [ma, md, k_round, norm_channel, cusum, onset_time]
 
     def onset_analysis(self, df_flux, windowstart, windowlen, channels_dict,
-                          channel='flux', cusum_window=30, yscale='log',
-                          ylim=None, xlim=None, shrink=0):
+                       channel='flux', cusum_window=30, yscale='log',
+                       ylim=None, xlim=None, shrink=0):
 
         self.print_info("Energy channels", channels_dict)
         spacecraft = self.spacecraft.upper()
@@ -553,11 +551,10 @@ class Event:
 
         # onset not yet found
         onset_found = False
-        background_stats = self.mean_value(avg_start, avg_end,
-                                              flux_series)
+        background_stats = self.mean_value(avg_start, avg_end, flux_series)
         onset_stats =\
             self.onset_determination(background_stats, flux_series,
-                                        cusum_window, avg_end)
+                                     cusum_window, avg_end)
 
         if not isinstance(onset_stats[-1], pd._libs.tslibs.nattype.NaTType):
 
@@ -653,7 +650,6 @@ class Event:
         # Onset label
         if(onset_found):
 
-
             if(self.spacecraft == 'solo'):
                 plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
                                       f"Peak flux: {df_flux_peak['flux'][0]:.2f}",
@@ -664,7 +660,7 @@ class Event:
                                       f"Peak flux: {df_flux_peak.values[0]:.2f}",
                                       prop=dict(size=13), frameon=True,
                                       loc=(4))
-                
+
         else:
 
             plabel = AnchoredText("No onset found",
@@ -750,16 +746,16 @@ class Event:
 
                     df_flux, en_channel_string =\
                             calc_av_en_flux_ST_HET(self.current_df_i,
-                                                    self.current_energies['channels_dict_df_p'],
-                                                    channels,
-                                                    species='p')
+                                                   self.current_energies['channels_dict_df_p'],
+                                                   channels,
+                                                   species='p')
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
                             calc_av_en_flux_ST_HET(self.current_df_e,
-                                                    self.current_energies['channels_dict_df_e'],
-                                                    channels,
-                                                    species='e')
+                                                   self.current_energies['channels_dict_df_e'],
+                                                   channels,
+                                                   species='e')
 
             elif(self.sensor == 'sept'):
 
@@ -799,5 +795,5 @@ class Event:
 
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
-                                   en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim, shrink=shrink)
+                                en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim, shrink=shrink)
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig
