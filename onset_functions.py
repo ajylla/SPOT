@@ -517,7 +517,7 @@ class Event:
 
     def onset_analysis(self, df_flux, windowstart, windowlen, channels_dict,
                        channel='flux', cusum_window=30, yscale='log',
-                       ylim=None, xlim=None, shrink=0):
+                       ylim=None, xlim=None):
 
         self.print_info("Energy channels", channels_dict)
         spacecraft = self.spacecraft.upper()
@@ -702,7 +702,7 @@ class Event:
         return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig, background_stats[0]
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
-                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2, shrink=0):
+                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') or (self.spacecraft.lower() == 'solo'):
             self.viewing_used = viewing
@@ -804,5 +804,5 @@ class Event:
 
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
-                                en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim, shrink=shrink)
+                                en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
