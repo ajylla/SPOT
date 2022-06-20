@@ -22,7 +22,7 @@ def get_sun_coords(time='now'):
 def radial_distance_to_sun(spacecraft, time='now'):
     '''
     Gets the 3D radial distance of a spacecraft to the Sun.
-    3D here means that it's the real spacial distance and not
+    3D here means that it's the real spatial distance and not
     a projection on, say, the solar equatorial plane.
 
     Args:
@@ -49,10 +49,10 @@ def calc_spiral_length(radial_dist, sw_speed):
         astropy units: Parker spiral length.
     '''
 
-   vakio = (SOLAR_ROT/sw_speed)*(radial_dist-const.R_sun) 
-   sqrt_vakio = sqrt(vakio**2 + 1)
+    vakio = (SOLAR_ROT/sw_speed)*(radial_dist-const.R_sun) 
+    sqrt_vakio = sqrt(vakio**2 + 1)
 
-   return 0.5 * (sw_speed/SOLAR_ROT) * (vakio*sqrt_vakio + log(vakio + sqrt_vakio))
+    return 0.5 * (sw_speed/SOLAR_ROT) * (vakio*sqrt_vakio + log(vakio + sqrt_vakio))
 
 def calc_particle_speed(mass, kinetic_energy):
     '''
@@ -73,7 +73,7 @@ def calc_particle_speed(mass, kinetic_energy):
 def inf_inj_time(spacecraft, onset_time, species, kinetic_energy, sw_speed):
     '''
     Main function of the script.
-    Calculates the inferred injection time of a particle from the Sun
+    Calculates the inferred injection time of a particle (electron or proton) from the Sun
     given a detection time at some spacecraft.
 
     Args:
