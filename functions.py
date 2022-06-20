@@ -74,7 +74,7 @@ class Event:
                                        path=self.data_path)
                 return df, meta
 
-        if(self.spacecraft[:2].lower() == 'soho'):
+        if(self.spacecraft.lower() == 'soho'):
             if(self.sensor == 'erne'):
                 df, meta = soho_load(dataset="SOHO_ERNE-HED_L2-1MIN",
                                      startdate=self.start_date,
@@ -141,9 +141,9 @@ class Event:
                 self.current_df_e = self.df_het.filter(like='Electron')
                 self.current_energies = self.meta_het
 
-        if(self.spacecraft[:2].lower() == 'soho'):
+        if(self.spacecraft.lower() == 'soho'):
 
-            if(self.sensor.lower == 'erne'):
+            if(self.sensor.lower() == 'erne'):
 
                 self.df, self.meta =\
                     self.load_data(self.spacecraft, self.sensor, 'None',
@@ -532,6 +532,8 @@ class Event:
         if(self.spacecraft == 'solo'):
             flux_series = df_flux[channel]
         if(self.spacecraft[:2].lower() == 'st'):
+            flux_series = df_flux  # [channel]'
+        if(self.spacecraft.lower() == 'soho'):
             flux_series = df_flux  # [channel]
         date = flux_series.index
 
@@ -563,6 +565,8 @@ class Event:
         if(self.spacecraft == 'solo'):
             df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink][channel] == df_flux[0+shrink: -1-shrink][channel].max()]
         if(self.spacecraft[:2].lower() == 'st'):
+            df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink] == df_flux[0+shrink: -1-shrink].max()]
+        if(self.spacecraft == 'soho'):
             df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink] == df_flux[0+shrink: -1-shrink].max()]
         self.print_info("Flux peak", df_flux_peak)
         self.print_info("Onset time", onset_stats[-1])
@@ -655,7 +659,7 @@ class Event:
                                       f"Peak flux: {df_flux_peak['flux'][0]:.2f}",
                                       prop=dict(size=13), frameon=True,
                                       loc=(4))
-            if(self.spacecraft[:2].lower() == 'st'):
+            if(self.spacecraft[:2].lower() == 'st' or self.spacecraft == 'soho'):
                 plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
                                       f"Peak flux: {df_flux_peak.values[0]:.2f}",
                                       prop=dict(size=13), frameon=True,
@@ -772,7 +776,7 @@ class Event:
                                                  self.current_e_energies,
                                                  channels)
 
-        if(self.spacecraft[:2] == 'soho'):
+        if(self.spacecraft == 'soho'):
 
             if(self.sensor == 'erne'):
 
