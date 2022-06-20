@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from soho_loader import soho_load, calc_av_en_flux_ERNE
 from solo_epd_loader import epd_load
 from stereo_loader import stereo_load, calc_av_en_flux_SEPT
 from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
@@ -73,6 +74,17 @@ class Event:
                                        pos_timestamp='center',
                                        path=self.data_path)
                 return df, meta
+        
+        if(self.spacecraft[:2].lower() == 'soho'):
+            if(self.sensor == 'erne'):
+                df, meta = soho_load(dataset="SOHO_ERNE-HED_L2-1MIN",
+                                     startdate=self.start_date,
+                                     enddate=self.end_date,
+                                     path=self.data_path,
+                                     resample=None,
+                                     pos_timestamp='center')
+                return df, meta
+
 
     def load_all_viewing(self):
 
@@ -130,6 +142,17 @@ class Event:
                 self.current_df_i = self.df_het.filter(like='Proton')
                 self.current_df_e = self.df_het.filter(like='Electron')
                 self.current_energies = self.meta_het
+        
+        if(self.spacecraft[:2].lower() == 'soho'):
+
+            if(self.sensor.lower == 'erne'):
+
+                self.df, self.meta =\
+                    self.load_data(self.spacecraft, self.sensor, 'None',
+                                   self.data_level)
+                self.current_df_i = self.df.filter(like='PH_')
+                # self.current_df_e = self.df.filter(like='Electron')
+                self.current_energies = self.meta
 
     def choose_data(self, viewing):
 
@@ -191,7 +214,7 @@ class Event:
     def calc_av_en_flux_HET(self, df, energies, en_channel):
 
         """This function averages the flux of several
-        energy channels of HET into a combined energy channel
+        energy channels of SolO/HET into a combined energy channel
         channel numbers counted from 0
 
         Parameters
@@ -681,6 +704,8 @@ class Event:
             self.choose_data(viewing)
         elif (self.spacecraft[:2].lower() == 'st' and self.sensor == 'het'):
             self.viewing_used = ''
+        elif (self.spacecraft.lower() == 'soho' and self.sensor == 'erne'):
+            self.viewing_used = ''
 
         self.averaging_used = resample_period
         self.x_sigma = x_sigma
@@ -750,6 +775,19 @@ class Event:
                             calc_av_en_flux_SEPT(self.current_df_e,
                                                  self.current_e_energies,
                                                  channels)
+
+        if(self.spacecraft[:2] == 'soho'):
+
+            if(self.sensor == 'erne'):
+
+                if(self.species in ['p', 'i']):
+
+                    df_flux, en_channel_string =\
+                            calc_av_en_flux_ERNE(self.current_df_i,
+                                                 self.current_energies['channels_dict_df_p'],
+                                                 channels,
+                                                 species='p',
+                                                 sensor='HET')
 
         if(resample_period is not None):
 
