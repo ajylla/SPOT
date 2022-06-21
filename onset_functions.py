@@ -45,6 +45,7 @@ class Event:
         if(self.spacecraft[:2].lower() == 'st'):
             if(self.sensor == 'sept'):
                 df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
+                                                       startdate=self.start_date,
                                                        enddate=self.end_date,
                                                        spacecraft=self.spacecraft,
                                                        # sept_species=self.species,
@@ -516,7 +517,7 @@ class Event:
 
     def onset_analysis(self, df_flux, windowstart, windowlen, channels_dict,
                        channel='flux', cusum_window=30, yscale='log',
-                       ylim=None, xlim=None, shrink=0):
+                       ylim=None, xlim=None):
 
         self.print_info("Energy channels", channels_dict)
         spacecraft = self.spacecraft.upper()
@@ -551,6 +552,10 @@ class Event:
 
             xlim = [date[0], date[-1]]
 
+        else:
+
+            df_flux = df_flux[xlim[0]:xlim[-1]]
+
         # onset not yet found
         onset_found = False
         background_stats = self.mean_value(avg_start, avg_end, flux_series)
@@ -563,11 +568,11 @@ class Event:
             onset_found = True
 
         if(self.spacecraft == 'solo'):
-            df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink][channel] == df_flux[0+shrink: -1-shrink][channel].max()]
+            df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
         if(self.spacecraft[:2].lower() == 'st'):
-            df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink] == df_flux[0+shrink: -1-shrink].max()]
+            df_flux_peak = df_flux[df_flux == df_flux.max()]
         if(self.spacecraft == 'soho'):
-            df_flux_peak = df_flux[0+shrink: -1-shrink][df_flux[0+shrink: -1-shrink] == df_flux[0+shrink: -1-shrink].max()]
+            df_flux_peak = df_flux[df_flux == df_flux.max()]
         self.print_info("Flux peak", df_flux_peak)
         self.print_info("Onset time", onset_stats[-1])
         self.print_info("Mean of background intensity",
@@ -596,10 +601,10 @@ class Event:
                        color=color_dict['onset_time'], linestyle='-',
                        label="Onset time")
 
-            # Flux peak line (first peak only, if there's multiple)
-            ax.axvline(df_flux_peak.index[0], linewidth=1.5,
-                       color=color_dict['flux_peak'], linestyle='-',
-                       label="Peak time")
+        # Flux peak line (first peak only, if there's multiple)
+        ax.axvline(df_flux_peak.index[0], linewidth=1.5,
+                   color=color_dict['flux_peak'], linestyle='-',
+                   label="Peak time")
 
         # background mean
         ax.axhline(onset_stats[0], linewidth=2,
@@ -694,10 +699,10 @@ class Event:
         plt.tight_layout()
         plt.show()
 
-        return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig
+        return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig, background_stats[0]
 
     def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
-                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2, shrink=0):
+                channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') or (self.spacecraft.lower() == 'solo'):
             self.viewing_used = viewing
@@ -797,7 +802,7 @@ class Event:
 
             df_averaged = df_flux
 
-        flux_series, onset_stats, onset_found, peak_flux, peak_time, fig =\
+        flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
-                                en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim, shrink=shrink)
-        return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig
+                                en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+        return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
