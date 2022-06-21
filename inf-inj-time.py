@@ -2,9 +2,10 @@ from sunpy.coordinates.ephemeris import get_horizons_coord
 from numpy import sqrt, log, pi
 from astropy import constants as const
 from astropy import units as u
+import sunpy.sun.constants as sconst
 import datetime
 
-SOLAR_ROT = 2*pi/(2.193*10**6) * (1/u.s)
+solar_rot = sconst.get('sidereal rotation rate').to(u.rad/u.s)
 
 def get_sun_coords(time='now'):
     '''
@@ -49,10 +50,10 @@ def calc_spiral_length(radial_dist, sw_speed):
         astropy units: Parker spiral length.
     '''
 
-    vakio = (SOLAR_ROT/sw_speed)*(radial_dist-const.R_sun) 
+    vakio = (solar_rot/sw_speed)*(radial_dist-const.R_sun) 
     sqrt_vakio = sqrt(vakio**2 + 1)
 
-    return 0.5 * (sw_speed/SOLAR_ROT) * (vakio*sqrt_vakio + log(vakio + sqrt_vakio))
+    return 0.5 * (sw_speed/solar_rot) * (vakio*sqrt_vakio + log(vakio + sqrt_vakio))
 
 def calc_particle_speed(mass, kinetic_energy):
     '''
