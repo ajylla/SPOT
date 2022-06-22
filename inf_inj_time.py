@@ -2,9 +2,10 @@ from sunpy.coordinates.ephemeris import get_horizons_coord
 from numpy import sqrt, log, pi
 from astropy import constants as const
 from astropy import units as u
+import sunpy.sun.constants as sconst
 import datetime
 
-SOLAR_ROT = 2*pi/(2.193*10**6) * (1/u.s)
+SOLAR_ROT = sconst.get('sidereal rotation rate').to(u.rad/u.s)
 
 def get_sun_coords(time='now'):
     '''
