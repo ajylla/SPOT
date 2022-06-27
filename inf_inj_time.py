@@ -50,10 +50,10 @@ def calc_spiral_length(radial_dist, sw_speed):
         astropy units: Parker spiral length.
     '''
 
-    vakio = (SOLAR_ROT/sw_speed)*(radial_dist-const.R_sun) 
-    sqrt_vakio = sqrt(vakio**2 + 1)
+    temp_const = ((SOLAR_ROT/sw_speed)*(radial_dist-const.R_sun)).value 
+    sqrt_temp_const = sqrt(temp_const**2 + 1)
 
-    return 0.5 * (sw_speed/SOLAR_ROT) * (vakio*sqrt_vakio + log(vakio + sqrt_vakio))
+    return 0.5*u.rad * (sw_speed/SOLAR_ROT) * (temp_const*sqrt_temp_const + log(temp_const + sqrt_temp_const))
 
 def calc_particle_speed(mass, kinetic_energy):
     '''
