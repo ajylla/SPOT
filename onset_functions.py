@@ -661,12 +661,12 @@ class Event:
 
             if(self.spacecraft == 'solo'):
                 plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
-                                      f"Peak flux: {df_flux_peak['flux'][0]:.2f}",
+                                      f"Peak flux: {df_flux_peak['flux'][0]:.2E}",
                                       prop=dict(size=13), frameon=True,
                                       loc=(4))
             if(self.spacecraft[:2].lower() == 'st' or self.spacecraft == 'soho'):
                 plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
-                                      f"Peak flux: {df_flux_peak.values[0]:.2f}",
+                                      f"Peak flux: {df_flux_peak.values[0]:.2E}",
                                       prop=dict(size=13), frameon=True,
                                       loc=(4))
 
