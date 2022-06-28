@@ -112,7 +112,5 @@ def inf_inj_time(spacecraft, onset_time, species, kinetic_energy, sw_speed):
 
     travel_time = spiral_length/particle_speed
     travel_time = travel_time.to(u.s)
-    
-    print(SOLAR_ROT)
 
     return onset_time - datetime.timedelta(seconds=travel_time.value), radial_distance
