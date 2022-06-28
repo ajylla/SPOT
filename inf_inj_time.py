@@ -50,7 +50,7 @@ def calc_spiral_length(radial_dist, sw_speed):
         astropy units: Parker spiral length.
     '''
 
-    temp_const = ((SOLAR_ROT/sw_speed)*(radial_dist-const.R_sun)).value 
+    temp_const = ((SOLAR_ROT/sw_speed)*(radial_dist.to(u.km)-const.R_sun)).value 
     sqrt_temp_const = sqrt(temp_const**2 + 1)
 
     return 0.5*u.rad * (sw_speed/SOLAR_ROT) * (temp_const*sqrt_temp_const + log(temp_const + sqrt_temp_const))
@@ -68,7 +68,7 @@ def calc_particle_speed(mass, kinetic_energy):
     '''
 
     gamma = sqrt(1 - (mass*const.c**2/(kinetic_energy + mass*const.c**2))**2)
-
+    
     return gamma*const.c
 
 def inf_inj_time(spacecraft, onset_time, species, kinetic_energy, sw_speed):
@@ -112,5 +112,7 @@ def inf_inj_time(spacecraft, onset_time, species, kinetic_energy, sw_speed):
 
     travel_time = spiral_length/particle_speed
     travel_time = travel_time.to(u.s)
+    
+    print(SOLAR_ROT)
 
     return onset_time - datetime.timedelta(seconds=travel_time.value), radial_distance
