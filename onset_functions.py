@@ -646,14 +646,30 @@ class Event:
             s_identifier = 'electrons'
 
         if self.species in ['p', 'i']:
+            
+            if((spacecraft == 'sta' and sensor == 'sept') or
+               spacecraft == 'solo' and sensor == 'ept'):
 
-            s_identifier = 'ions'
+                s_identifier = 'ions'
+            
+            else:
+                
+                s_identifier = 'protons'
 
         self.print_info("Particle species", s_identifier)
 
-        plt.title(f"{spacecraft} {sensor}\n"
-                  f"{self.averaging_used} averaging, viewing: "
-                  f"{self.viewing_used.upper()}")
+        if(self.viewing_used != '' and self.viewing_used != None):
+            
+            plt.title(f"{spacecraft}/{sensor} {channels_dict} {s_identifier}\n"
+                      f"{self.averaging_used} averaging, viewing: "
+                      f"{self.viewing_used.upper()}")
+            
+        else:
+            
+            plt.title(f"{spacecraft}/{sensor} {channels_dict} {s_identifier}\n"
+                      f"{self.averaging_used} averaging")
+            
+            
         fig.set_size_inches(16, 8)
 
         # Onset label
@@ -687,15 +703,17 @@ class Event:
         blabel.patch.set_linewidth(2.0)
 
         # Energy and species label
+        '''
         eslabel = AnchoredText(f"{channels_dict} {s_identifier}",
                                prop=dict(size=13), frameon=True,
                                loc='lower left')
         eslabel.patch.set_boxstyle("round, pad=0., rounding_size=0.2")
         eslabel.patch.set_linewidth(2.0)
+        '''
 
         ax.add_artist(plabel)
         ax.add_artist(blabel)
-        ax.add_artist(eslabel)
+        #ax.add_artist(eslabel)
         plt.tight_layout()
         plt.show()
 
