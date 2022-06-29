@@ -1,16 +1,17 @@
+import datetime
+# import warnings
+
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from soho_loader import soho_load, calc_av_en_flux_ERNE
-from solo_epd_loader import epd_load
-from stereo_loader import stereo_load, calc_av_en_flux_SEPT
-from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
-from matplotlib.offsetbox import AnchoredText
-import datetime
-import matplotlib.ticker as ticker
 from matplotlib.dates import DateFormatter
+from matplotlib.offsetbox import AnchoredText
 from pandas.tseries.frequencies import to_offset
-import warnings
+from soho_loader import calc_av_en_flux_ERNE, soho_load
+from solo_epd_loader import epd_load
+from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
+from stereo_loader import calc_av_en_flux_SEPT, stereo_load
 
 
 class Event:
@@ -646,30 +647,29 @@ class Event:
             s_identifier = 'electrons'
 
         if self.species in ['p', 'i']:
-            
+
             if((spacecraft == 'sta' and sensor == 'sept') or
                spacecraft == 'solo' and sensor == 'ept'):
 
                 s_identifier = 'ions'
-            
+
             else:
-                
+
                 s_identifier = 'protons'
 
         self.print_info("Particle species", s_identifier)
 
         if(self.viewing_used != '' and self.viewing_used != None):
-            
+
             plt.title(f"{spacecraft}/{sensor} {channels_dict} {s_identifier}\n"
                       f"{self.averaging_used} averaging, viewing: "
                       f"{self.viewing_used.upper()}")
-            
+
         else:
-            
+
             plt.title(f"{spacecraft}/{sensor} {channels_dict} {s_identifier}\n"
                       f"{self.averaging_used} averaging")
-            
-            
+
         fig.set_size_inches(16, 8)
 
         # Onset label
@@ -713,7 +713,7 @@ class Event:
 
         ax.add_artist(plabel)
         ax.add_artist(blabel)
-        #ax.add_artist(eslabel)
+        # ax.add_artist(eslabel)
         plt.tight_layout()
         plt.show()
 
