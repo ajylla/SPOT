@@ -272,8 +272,8 @@ class Event:
         if type(en_channel) == list:
 
             en_channel_string = en_str[en_channel[0]][0].split()[0] + ' - '\
-                    + en_str[en_channel[-1]][0].split()[2] + ' ' +\
-                    en_str[en_channel[-1]][0].split()[3]
+                + en_str[en_channel[-1]][0].split()[2] + ' ' +\
+                en_str[en_channel[-1]][0].split()[3]
 
             if len(en_channel) > 2:
 
@@ -294,7 +294,7 @@ class Event:
                         I_all = I_all + df[flux_key].values[:, bins] * DE[bins]
 
                 DE_total = np.sum(DE[(en_channel[0]):(en_channel[-1] + 1)])
-                flux_av_en = pd.Series(I_all/DE_total, index=df.index)
+                flux_av_en = pd.Series(I_all / DE_total, index=df.index)
                 flux_out = pd.DataFrame({'flux': flux_av_en}, index=df.index)
 
             else:
@@ -373,8 +373,8 @@ class Event:
         if type(en_channel) == list:
 
             en_channel_string = en_str[en_channel[0]][0].split()[0] + ' - '\
-                    + en_str[en_channel[-1]][0].split()[2] + ' '\
-                    + en_str[en_channel[-1]][0].split()[3]
+                + en_str[en_channel[-1]][0].split()[2] + ' '\
+                + en_str[en_channel[-1]][0].split()[3]
 
             if len(en_channel) > 2:
 
@@ -384,7 +384,7 @@ class Event:
 
                 DE = energies[bins_width]
 
-                for bins in np.arange(en_channel[0], en_channel[-1]+1):
+                for bins in np.arange(en_channel[0], en_channel[-1] + 1):
 
                     if bins == en_channel[0]:
 
@@ -394,8 +394,8 @@ class Event:
 
                         I_all = I_all + df[flux_key].values[:, bins] * DE[bins]
 
-                DE_total = np.sum(DE[(en_channel[0]):(en_channel[-1]+1)])
-                flux_av_en = pd.Series(I_all/DE_total, index=df.index)
+                DE_total = np.sum(DE[(en_channel[0]):(en_channel[-1] + 1)])
+                flux_av_en = pd.Series(I_all / DE_total, index=df.index)
                 flux_out = pd.DataFrame({'flux': flux_av_en}, index=df.index)
 
             else:
@@ -418,7 +418,7 @@ class Event:
 
         df_flux_out = df_flux.resample(resample_period, label='left').mean()
         df_flux_out.index = df_flux_out.index\
-            + to_offset(pd.Timedelta(resample_period)/2)
+            + to_offset(pd.Timedelta(resample_period) / 2)
 
         return df_flux_out
 
@@ -427,7 +427,7 @@ class Event:
         title_string = "##### >" + title + "< #####"
         print(title_string)
         print(info)
-        print('#'*len(title_string) + '\n')
+        print('#' * len(title_string) + '\n')
 
     def mean_value(self, tb_start, tb_end, flux_series):
 
@@ -452,13 +452,13 @@ class Event:
         date = flux_series.index
         ma = ma_sigma[0]
         sigma = ma_sigma[1]
-        md = ma + self.x_sigma*sigma
+        md = ma + self.x_sigma * sigma
 
         # k may get really big if sigma is large in comparison to mean
         try:
 
-            k = (md-ma)/(np.log(md)-np.log(ma))
-            k_round = round(k/sigma)
+            k = (md - ma) / (np.log(md) - np.log(ma))
+            k_round = round(k / sigma)
 
         except ValueError:
 
@@ -484,10 +484,10 @@ class Event:
         for i in range(1, len(cusum)):
 
             # normalize the observed flux
-            norm_channel[i] = (flux_series[i]-ma)/sigma
+            norm_channel[i] = (flux_series[i] - ma) / sigma
 
             # calculate the value for ith cusum entry
-            cusum[i] = max(0, norm_channel[i] - k_round + cusum[i-1])
+            cusum[i] = max(0, norm_channel[i] - k_round + cusum[i - 1])
 
             # check if cusum[i] is above threshold h,
             # if it is -> increment alert
@@ -526,9 +526,9 @@ class Event:
 
         color_dict = {
             'onset_time': '#e41a1c',
-            'bg_mean':    '#e41a1c',
-            'flux_peak':  '#1a1682',
-            'bg':         '#de8585'
+            'bg_mean': '#e41a1c',
+            'flux_peak': '#1a1682',
+            'bg': '#de8585'
         }
 
         if(self.spacecraft == 'solo'):
@@ -648,8 +648,7 @@ class Event:
 
         if self.species in ['p', 'i']:
 
-            if((spacecraft == 'sta' and sensor == 'sept') or
-               spacecraft == 'solo' and sensor == 'ept'):
+            if((spacecraft == 'sta' and sensor == 'sept') or spacecraft == 'solo' and sensor == 'ept'):
 
                 s_identifier = 'ions'
 
@@ -719,7 +718,7 @@ class Event:
 
         return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig, background_stats[0]
 
-    def analyse(self, viewing,  bg_start, bg_length, resample_period=None,
+    def analyse(self, viewing, bg_start, bg_length, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') or (self.spacecraft.lower() == 'solo'):
@@ -740,30 +739,30 @@ class Event:
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_HET(self.current_df_i,
-                                                     self.current_energies,
-                                                     channels)
+                        self.calc_av_en_flux_HET(self.current_df_i,
+                                                 self.current_energies,
+                                                 channels)
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_HET(self.current_df_e,
-                                                     self.current_energies,
-                                                     channels)
+                        self.calc_av_en_flux_HET(self.current_df_e,
+                                                 self.current_energies,
+                                                 channels)
 
             elif(self.sensor == 'ept'):
 
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_EPT(self.current_df_i,
-                                                     self.current_energies,
-                                                     channels)
+                        self.calc_av_en_flux_EPT(self.current_df_i,
+                                                 self.current_energies,
+                                                 channels)
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
-                            self.calc_av_en_flux_EPT(self.current_df_e,
-                                                     self.current_energies,
-                                                     channels)
+                        self.calc_av_en_flux_EPT(self.current_df_e,
+                                                 self.current_energies,
+                                                 channels)
 
         if(self.spacecraft[:2] == 'st'):
 
@@ -772,32 +771,32 @@ class Event:
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            calc_av_en_flux_ST_HET(self.current_df_i,
-                                                   self.current_energies['channels_dict_df_p'],
-                                                   channels,
-                                                   species='p')
+                        calc_av_en_flux_ST_HET(self.current_df_i,
+                                               self.current_energies['channels_dict_df_p'],
+                                               channels,
+                                               species='p')
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
-                            calc_av_en_flux_ST_HET(self.current_df_e,
-                                                   self.current_energies['channels_dict_df_e'],
-                                                   channels,
-                                                   species='e')
+                        calc_av_en_flux_ST_HET(self.current_df_e,
+                                               self.current_energies['channels_dict_df_e'],
+                                               channels,
+                                               species='e')
 
             elif(self.sensor == 'sept'):
 
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            calc_av_en_flux_SEPT(self.current_df_i,
-                                                 self.current_i_energies,
-                                                 channels)
+                        calc_av_en_flux_SEPT(self.current_df_i,
+                                             self.current_i_energies,
+                                             channels)
                 elif(self.species == 'e'):
 
                     df_flux, en_channel_string =\
-                            calc_av_en_flux_SEPT(self.current_df_e,
-                                                 self.current_e_energies,
-                                                 channels)
+                        calc_av_en_flux_SEPT(self.current_df_e,
+                                             self.current_e_energies,
+                                             channels)
 
         if(self.spacecraft == 'soho'):
 
@@ -806,11 +805,11 @@ class Event:
                 if(self.species in ['p', 'i']):
 
                     df_flux, en_channel_string =\
-                            calc_av_en_flux_ERNE(self.current_df_i,
-                                                 self.current_energies['channels_dict_df_p'],
-                                                 channels,
-                                                 species='p',
-                                                 sensor='HET')
+                        calc_av_en_flux_ERNE(self.current_df_i,
+                                             self.current_energies['channels_dict_df_p'],
+                                             channels,
+                                             species='p',
+                                             sensor='HET')
 
         if(resample_period is not None):
 
