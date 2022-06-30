@@ -294,7 +294,7 @@ class Event:
                         I_all = I_all + df[flux_key].values[:, bins] * DE[bins]
 
                 DE_total = np.sum(DE[(en_channel[0]):(en_channel[-1] + 1)])
-                flux_av_en = pd.Series(I_all/DE_total, index=df.index)
+                flux_av_en = pd.Series(I_all / DE_total, index=df.index)
                 flux_out = pd.DataFrame({'flux': flux_av_en}, index=df.index)
 
             else:
@@ -384,7 +384,7 @@ class Event:
 
                 DE = energies[bins_width]
 
-                for bins in np.arange(en_channel[0], en_channel[-1]+1):
+                for bins in np.arange(en_channel[0], en_channel[-1] + 1):
 
                     if bins == en_channel[0]:
 
@@ -394,8 +394,8 @@ class Event:
 
                         I_all = I_all + df[flux_key].values[:, bins] * DE[bins]
 
-                DE_total = np.sum(DE[(en_channel[0]):(en_channel[-1]+1)])
-                flux_av_en = pd.Series(I_all/DE_total, index=df.index)
+                DE_total = np.sum(DE[(en_channel[0]):(en_channel[-1] + 1)])
+                flux_av_en = pd.Series(I_all / DE_total, index=df.index)
                 flux_out = pd.DataFrame({'flux': flux_av_en}, index=df.index)
 
             else:
@@ -418,7 +418,7 @@ class Event:
 
         df_flux_out = df_flux.resample(resample_period, label='left').mean()
         df_flux_out.index = df_flux_out.index\
-            + to_offset(pd.Timedelta(resample_period)/2)
+            + to_offset(pd.Timedelta(resample_period) / 2)
 
         return df_flux_out
 
@@ -427,7 +427,7 @@ class Event:
         title_string = "##### >" + title + "< #####"
         print(title_string)
         print(info)
-        print('#'*len(title_string) + '\n')
+        print('#' * len(title_string) + '\n')
 
     def mean_value(self, tb_start, tb_end, flux_series):
 
@@ -452,13 +452,13 @@ class Event:
         date = flux_series.index
         ma = ma_sigma[0]
         sigma = ma_sigma[1]
-        md = ma + self.x_sigma*sigma
+        md = ma + self.x_sigma * sigma
 
         # k may get really big if sigma is large in comparison to mean
         try:
 
-            k = (md-ma)/(np.log(md)-np.log(ma))
-            k_round = round(k/sigma)
+            k = (md - ma) / (np.log(md) - np.log(ma))
+            k_round = round(k / sigma)
 
         except ValueError:
 
@@ -484,10 +484,10 @@ class Event:
         for i in range(1, len(cusum)):
 
             # normalize the observed flux
-            norm_channel[i] = (flux_series[i]-ma)/sigma
+            norm_channel[i] = (flux_series[i] - ma) / sigma
 
             # calculate the value for ith cusum entry
-            cusum[i] = max(0, norm_channel[i] - k_round + cusum[i-1])
+            cusum[i] = max(0, norm_channel[i] - k_round + cusum[i - 1])
 
             # check if cusum[i] is above threshold h,
             # if it is -> increment alert
@@ -526,9 +526,9 @@ class Event:
 
         color_dict = {
             'onset_time': '#e41a1c',
-            'bg_mean':    '#e41a1c',
-            'flux_peak':  '#1a1682',
-            'bg':         '#de8585'
+            'bg_mean': '#e41a1c',
+            'flux_peak': '#1a1682',
+            'bg': '#de8585'
         }
 
         if(self.spacecraft == 'solo'):
