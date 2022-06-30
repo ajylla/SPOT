@@ -1,6 +1,6 @@
-import datetime
-# import warnings
 
+import os
+import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -12,6 +12,8 @@ from soho_loader import calc_av_en_flux_ERNE, soho_load
 from solo_epd_loader import epd_load
 from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
 from stereo_loader import calc_av_en_flux_SEPT, stereo_load
+
+import ipywidgets as widgets
 
 
 class Event:
@@ -27,7 +29,31 @@ class Event:
         self.data_level = data_level.lower()
         self.data_path = data_path
 
+        # placeholding class attributes for onset_analysis()
+        self.flux_series = None
+        self.onset_stats = None
+        self.onset_found = None
+        self.peak_flux = None
+        self.peak_time = None
+        self.fig = None
+        self.bg_mean = None
+
+
         self.load_all_viewing()
+
+
+    def update_onset_attributes(self, flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean):
+        """
+        Method to update onset-related attributes, that are None by default and only have values after analyze() has been run.
+        """
+        self.flux_series = flux_series
+        self.onset_stats = onset_stats
+        self.onset_found = onset_found
+        self.peak_flux = peak_flux
+        self.peak_time = peak_time
+        self.fig = fig
+        self.bg_mean = bg_mean
+
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
                   autodownload=True):
