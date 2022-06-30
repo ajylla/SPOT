@@ -37,14 +37,22 @@ class Event:
         self.peak_time = None
         self.fig = None
         self.bg_mean = None
-
+        self.output = {
+            "flux_series" : self.flux_series,
+            "onset_stats" : self.onset_stats,
+            "onset_found" : self.onset_found,
+            "peak_flux" : self.peak_flux,
+            "peak_time" : self.peak_time,
+            "fig": self.fig,
+            "bg_mean" : self.bg_mean
+                      }
 
         self.load_all_viewing()
 
 
     def update_onset_attributes(self, flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean):
         """
-        Method to update onset-related attributes, that are None by default and only have values after analyze() has been run.
+        Method to update onset-related attributes, that are None by default and only have values after analyse() has been run.
         """
         self.flux_series = flux_series
         self.onset_stats = onset_stats
@@ -53,6 +61,17 @@ class Event:
         self.peak_time = peak_time
         self.fig = fig
         self.bg_mean = bg_mean
+
+        # also remember to update the dictionary, it won't update automatically
+        self.output = {
+            "flux_series" : self.flux_series,
+            "onset_stats" : self.onset_stats,
+            "onset_found" : self.onset_found,
+            "peak_flux" : self.peak_flux,
+            "peak_time" : self.peak_time,
+            "fig": self.fig,
+            "bg_mean" : self.bg_mean
+                      }
 
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
@@ -849,4 +868,8 @@ class Event:
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+        
+        # update class attributes before returning variables:
+        self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean)
+
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
