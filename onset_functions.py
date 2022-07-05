@@ -13,8 +13,6 @@ from solo_epd_loader import epd_load
 from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
 from stereo_loader import calc_av_en_flux_SEPT, stereo_load
 
-import ipywidgets as widgets
-
 
 class Event:
 
@@ -33,6 +31,7 @@ class Event:
         self.flux_series = None
         self.onset_stats = None
         self.onset_found = None
+        self.onset = None
         self.peak_flux = None
         self.peak_time = None
         self.fig = None
@@ -41,6 +40,7 @@ class Event:
             "flux_series" : self.flux_series,
             "onset_stats" : self.onset_stats,
             "onset_found" : self.onset_found,
+            "onset" : self.onset,
             "peak_flux" : self.peak_flux,
             "peak_time" : self.peak_time,
             "fig": self.fig,
@@ -57,6 +57,7 @@ class Event:
         self.flux_series = flux_series
         self.onset_stats = onset_stats
         self.onset_found = onset_found
+        self.onset = onset_stats[-1]
         self.peak_flux = peak_flux
         self.peak_time = peak_time
         self.fig = fig
@@ -67,6 +68,7 @@ class Event:
             "flux_series" : self.flux_series,
             "onset_stats" : self.onset_stats,
             "onset_found" : self.onset_found,
+            "onset" : self.onset,
             "peak_flux" : self.peak_flux,
             "peak_time" : self.peak_time,
             "fig": self.fig,
@@ -870,6 +872,6 @@ class Event:
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
         
         # update class attributes before returning variables:
-        self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean)
+        self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux.values[0], peak_time, fig, bg_mean)
 
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
