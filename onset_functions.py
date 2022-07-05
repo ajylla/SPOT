@@ -1,6 +1,6 @@
-import datetime
-# import warnings
 
+import os
+import datetime
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -29,7 +29,54 @@ class Event:
         self.data_path = data_path
         self.threshold = threshold
 
+        # placeholding class attributes for onset_analysis()
+        self.flux_series = None
+        self.onset_stats = None
+        self.onset_found = None
+        self.onset = None
+        self.peak_flux = None
+        self.peak_time = None
+        self.fig = None
+        self.bg_mean = None
+        self.output = {
+            "flux_series" : self.flux_series,
+            "onset_stats" : self.onset_stats,
+            "onset_found" : self.onset_found,
+            "onset" : self.onset,
+            "peak_flux" : self.peak_flux,
+            "peak_time" : self.peak_time,
+            "fig": self.fig,
+            "bg_mean" : self.bg_mean
+                      }
+
         self.load_all_viewing()
+
+
+    def update_onset_attributes(self, flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean):
+        """
+        Method to update onset-related attributes, that are None by default and only have values after analyse() has been run.
+        """
+        self.flux_series = flux_series
+        self.onset_stats = onset_stats
+        self.onset_found = onset_found
+        self.onset = onset_stats[-1]
+        self.peak_flux = peak_flux
+        self.peak_time = peak_time
+        self.fig = fig
+        self.bg_mean = bg_mean
+
+        # also remember to update the dictionary, it won't update automatically
+        self.output = {
+            "flux_series" : self.flux_series,
+            "onset_stats" : self.onset_stats,
+            "onset_found" : self.onset_found,
+            "onset" : self.onset,
+            "peak_flux" : self.peak_flux,
+            "peak_time" : self.peak_time,
+            "fig": self.fig,
+            "bg_mean" : self.bg_mean
+                      }
+
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
                   autodownload=True, threshold=None):
@@ -890,4 +937,8 @@ class Event:
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+        
+        # update class attributes before returning variables:
+        self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux.values[0], peak_time, fig, bg_mean)
+
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
