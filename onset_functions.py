@@ -812,6 +812,10 @@ class Event:
                                                      self.current_energies,
                                                      channels)
 
+            else:
+                invalid_sensor_msg = "Invalid sensor!"
+                raise Exception(invalid_sensor_msg)
+
         if(self.spacecraft[:2] == 'st'):
 
             if(self.sensor == 'het'):
