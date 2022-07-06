@@ -11,7 +11,7 @@ list_of_sc = ["STEREO-A", "STEREO-B", "Solar Orbiter", "Bepicolombo", "SOHO"]
 stereo_instr = ["LET", "SEPT", "HET"]
 solo_instr = ["EPT", "HET"]
 bepi_instr = ["SIXS-P"]
-soho_instr = ["ERNE", ]
+soho_instr = ["ERNE-HED"]
 
 sensor_dict = {
     "STEREO-A" : stereo_instr,
@@ -39,7 +39,7 @@ species_dict = {
     ("Solar Orbiter", "EPT") : ['p', 'e'],
     ("Solar Orbiter", "HET") : ['p', 'e'],
     ("Bepicolombo", "SIXS-P") : ['p', 'e'],
-    ("SOHO", "ERNE") : ['p', 'e'],
+    ("SOHO", "ERNE-HED") : ['p'],
 }
 
 def spacecraft_dropdown():
@@ -138,8 +138,17 @@ def update_and_display_input(event_date : int, data_path : str, plot_path : str)
     # this is to be fed into Event class as input
     global input_dict
 
+    # we differentiate between erne-hed and erne, but the main onset analysis class only recognizes 'erne'
+    # same for solar orbiter
+    if spacecraft_drop.value == "ERNE-HED":
+        spacecraft_drop_value = "ERNE"
+    elif spacecraft_drop.value == "Solar Orbiter":
+        spacecraft_drop_value = "solo"
+    else:
+        spacecraft_drop_value = spacecraft_drop.value
+
     input_dict = {
-        "Spacecraft" : spacecraft_drop.value,
+        "Spacecraft" : spacecraft_drop_value,
         "Sensor" : sensor_drop.value,
         "Species" : species_drop.value,
         "Viewing" : view_drop_dict_value,
