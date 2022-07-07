@@ -3,6 +3,7 @@ A library to run the interactive user interface in SEP event onset determination
 """
 
 
+from importlib.resources import path
 import ipywidgets as widgets
 
 # a list of available spacecraft:
@@ -11,7 +12,7 @@ list_of_sc = ["STEREO-A", "STEREO-B", "Solar Orbiter", "Bepicolombo", "SOHO"]
 stereo_instr = ["LET", "SEPT", "HET"]
 solo_instr = ["EPT", "HET"]
 bepi_instr = ["SIXS-P"]
-soho_instr = ["ERNE", ]
+soho_instr = ["ERNE-HED"]
 
 sensor_dict = {
     "STEREO-A" : stereo_instr,
@@ -39,120 +40,100 @@ species_dict = {
     ("Solar Orbiter", "EPT") : ['p', 'e'],
     ("Solar Orbiter", "HET") : ['p', 'e'],
     ("Bepicolombo", "SIXS-P") : ['p', 'e'],
-    ("SOHO", "ERNE") : ['p', 'e'],
+    ("SOHO", "ERNE-HED") : ['p'],
 }
 
-def spacecraft_dropdown():
-
-    global spacecraft_drop
-
-    spacecraft_drop = widgets.Dropdown(
+spacecraft_drop = widgets.Dropdown(
                                 options = list_of_sc,
-                                value = list_of_sc[0],
                                 description = "Spacecraft:",
                                 disabled = False,
                                 )
 
-    return spacecraft_drop
-
-
-def sensor_dropdown(spacecraft_key):
-
-    global sensor_drop
-
-    sensor_list = sensor_dict[spacecraft_key]
-
-    sensor_drop = widgets.Dropdown(
-                                options = sensor_list,
-                                value = sensor_list[0],
+sensor_drop = widgets.Dropdown(
+                                options = sensor_dict[spacecraft_drop.value],
                                 description = "Sensor:",
                                 disabled = False,
                                 )
 
-    return sensor_drop
-
-
-def viewing_dropdown(instrument_key):
-    """
-    instrument_key is a 2-tuple consisting of spacecraft identifier and a sensor identifier.
-    This is because there are sensors with the same name on board different spacecraft, which have different viewing options.
-    """
-
-    # initialize these global variables for the first run of the notebook
-    global view_drop
-    view_drop = None
-
-    global viewing_opened
-    viewing_opened = False
-
-    try:
-        viewing_list = view_dict[instrument_key]
-        viewing_opened = True
-
-    except KeyError:
-        errormsg = "No viewing option available for this sensor."
-        if viewing_opened:
-            view_drop = None
-        return errormsg
-
-    view_drop = widgets.Dropdown(
-                                options = viewing_list,
-                                value = viewing_list[0],
+view_drop = widgets.Dropdown(
+                                options = [],
                                 description = "Viewing:",
-                                disabled = False,
+                                disabled = True
                                 )
 
-    return view_drop
-
-
-def species_dropdown(instrument_key):
-
-    global species_drop
-
-    species_list = species_dict[instrument_key]
-
-    species_drop = widgets.Dropdown(
-                                options = species_list,
-                                value = species_list[0],
+species_drop = widgets.Dropdown(
+                                options = species_dict[(spacecraft_drop.value, sensor_drop.value)],
                                 description = "Species:",
                                 disabled = False,
                                 )
 
-    return species_drop
+
+# this function updates the options in sensor_drop menu
+def update_sensor_options(val):
+    sensor_drop.options = sensor_dict[spacecraft_drop.value]
 
 
-def update_and_display_input(event_date : int, data_path : str, plot_path : str):
-
+# updates the options and availability of view_drop menu
+def update_view_options(val):
     try:
-        if view_drop:
-            view_drop_dict_value = view_drop.value
-        else:
-            view_drop_dict_value = None
+        view_drop.options = view_dict[(spacecraft_drop.value, sensor_drop.value)]
+        view_drop.disabled = False
+    except KeyError:
+        view_drop.disabled = True
+        view_drop.value = None
 
-    # this is caused by running this function before viewing_drop() has been run,
-    # which in itself is not necessarily a problem
-    except NameError:
-        print("NameError")
-        view_drop_dict_value = None
+
+def update_species_options(val):
+    try:
+        species_drop.options = species_dict[(spacecraft_drop.value, sensor_drop.value)]
+    except KeyError:
+        pass
+
+
+def confirm_input(event_date : int, data_path : str, plot_path : str):
+
+    print("You've chosen the following options:")
+    print(f"Spacecraft: {spacecraft_drop.value}")
+    print(f"Sensor: {sensor_drop.value}")
+    print(f"Species: {species_drop.value}")
+    print(f"Viewing: {view_drop.value}")
+    print(f"Event_date: {event_date}")
+    print(f"Data_path: {data_path}")
+    print(f"Plot_path: {plot_path}")
+
+    if spacecraft_drop.value == "Solar Orbiter":
+        spacecraft_drop_value = "solo"
+    elif spacecraft_drop.value == "STEREO-A":
+        spacecraft_drop_value = "sta"
+    elif spacecraft_drop.value == "STEREO-B":
+        spacecraft_drop_value = "stb"
+    else:
+        spacecraft_drop_value = spacecraft_drop.value
+    
+    if sensor_drop.value in ["ERNE-HED"]:
+        sensor_drop_value = "ERNE"
+    else:
+        sensor_drop_value = sensor_drop.value
 
     # this is to be fed into Event class as input
     global input_dict
 
     input_dict = {
-        "Spacecraft" : spacecraft_drop.value,
-        "Sensor" : sensor_drop.value,
+        "Spacecraft" : spacecraft_drop_value,
+        "Sensor" : sensor_drop_value,
         "Species" : species_drop.value,
-        "Viewing" : view_drop_dict_value,
+        "Viewing" : view_drop.value,
         "Event_date" : event_date,
         "Data_path" : data_path,
         "Plot_path" : plot_path
     }
 
-    print("You've chosen the following options:")
-    print(f"Spacecraft: {input_dict['Spacecraft']}")
-    print(f"Sensor: {input_dict['Sensor']}")
-    print(f"Species: {input_dict['Species']}")
-    print(f"Viewing: {input_dict['Viewing']}")
-    print(f"Event_date: {input_dict['Event_date']}")
-    print(f"Data_path: {input_dict['Data_path']}")
-    print(f"Plot_path: {input_dict['Plot_path']}")
+# makes spacecraft_drop run these functions every time it is accessed by user
+spacecraft_drop.observe(update_sensor_options)
+spacecraft_drop.observe(update_view_options)
+sensor_drop.observe(update_view_options)
+
+# does the same but for sensor menu
+spacecraft_drop.observe(update_species_options)
+sensor_drop.observe(update_species_options)
+
