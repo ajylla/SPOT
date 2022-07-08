@@ -31,16 +31,16 @@ view_dict = {
 }
 
 species_dict = {
-    ("STEREO-A", "LET") : ['p', 'e'],
-    ("STEREO-A", "SEPT") : ['p', 'e'],
-    ("STEREO-A", "HET") : ['H', 'e'],
-    ("STEREO-B", "LET") : ['p', 'e'],
-    ("STEREO-B", "SEPT") : ['p', 'e'],
-    ("STEREO-B", "HET") : ['H', 'e'],
-    ("Solar Orbiter", "EPT") : ['p', 'e'],
-    ("Solar Orbiter", "HET") : ['p', 'e'],
-    ("Bepicolombo", "SIXS-P") : ['p', 'e'],
-    ("SOHO", "ERNE-HED") : ['p'],
+    ("STEREO-A", "LET") : ['protons', 'electrons'],
+    ("STEREO-A", "SEPT") : ['protons', 'electrons'],
+    ("STEREO-A", "HET") : ['protons', 'electrons'],
+    ("STEREO-B", "LET") : ['protons', 'electrons'],
+    ("STEREO-B", "SEPT") : ['protons', 'electrons'],
+    ("STEREO-B", "HET") : ['protons', 'electrons'],
+    ("Solar Orbiter", "EPT") : ['protons', 'electrons'],
+    ("Solar Orbiter", "HET") : ['protons', 'electrons'],
+    ("Bepicolombo", "SIXS-P") : ['protons', 'electrons'],
+    ("SOHO", "ERNE-HED") : ['protons'],
 }
 
 spacecraft_drop = widgets.Dropdown(
@@ -114,6 +114,11 @@ def confirm_input(event_date : int, data_path : str, plot_path : str):
         sensor_drop_value = "ERNE"
     else:
         sensor_drop_value = sensor_drop.value
+    
+    if species_drop.value == "protons":
+        species_drop_value = 'p'
+    else:
+        species_drop_value = 'e'
 
     # this is to be fed into Event class as input
     global input_dict
@@ -121,7 +126,7 @@ def confirm_input(event_date : int, data_path : str, plot_path : str):
     input_dict = {
         "Spacecraft" : spacecraft_drop_value,
         "Sensor" : sensor_drop_value,
-        "Species" : species_drop.value,
+        "Species" : species_drop_value,
         "Viewing" : view_drop.value,
         "Event_date" : event_date,
         "Data_path" : data_path,

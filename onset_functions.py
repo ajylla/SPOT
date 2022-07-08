@@ -26,7 +26,7 @@ class Event:
         self.sensor = sensor.lower()
         self.species = species.lower()
         self.data_level = data_level.lower()
-        self.data_path = data_path
+        self.data_path = data_path + os.sep
         self.threshold = threshold
 
         # placeholding class attributes for onset_analysis()
@@ -94,27 +94,33 @@ class Event:
 
         if(self.spacecraft[:2].lower() == 'st'):
             if(self.sensor == 'sept'):
-                df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
-                                                       startdate=self.start_date,
-                                                       enddate=self.end_date,
-                                                       spacecraft=self.spacecraft,
-                                                       # sept_species=self.species,
-                                                       sept_species='p',
-                                                       sept_viewing=viewing,
-                                                       resample=None,
-                                                       path=self.data_path)
+                if self.species in ["p", "i"]:
+                    df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
+                                                        startdate=self.start_date,
+                                                        enddate=self.end_date,
+                                                        spacecraft=self.spacecraft,
+                                                        # sept_species=self.species,
+                                                        sept_species='p',
+                                                        sept_viewing=viewing,
+                                                        resample=None,
+                                                        path=self.data_path)
+                    df_e, channels_dict_df_e = [], []
+                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e 
 
-                df_e, channels_dict_df_e = stereo_load(instrument=self.sensor,
-                                                       startdate=self.start_date,
-                                                       enddate=self.end_date,
-                                                       spacecraft=self.spacecraft,
-                                                       # sept_species=self.species,
-                                                       sept_species='e',
-                                                       sept_viewing=viewing,
-                                                       resample=None,
-                                                       path=self.data_path)
+                if self.species == "e":
+                    df_e, channels_dict_df_e = stereo_load(instrument=self.sensor,
+                                                        startdate=self.start_date,
+                                                        enddate=self.end_date,
+                                                        spacecraft=self.spacecraft,
+                                                        # sept_species=self.species,
+                                                        sept_species='e',
+                                                        sept_viewing=viewing,
+                                                        resample=None,
+                                                        path=self.data_path)
 
-                return df_i, df_e, channels_dict_df_i, channels_dict_df_e
+                    df_i, channels_dict_df_i = [], []
+                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e 
+
             if(self.sensor == 'het'):
                 df, meta = stereo_load(instrument=self.sensor,
                                        startdate=self.start_date,
@@ -809,6 +815,9 @@ class Event:
 
     def analyse(self, viewing, bg_start, bg_length, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
+
+        if isinstance(channels, int):
+            channels = (channels,)
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') \
                 or (self.spacecraft.lower() == 'solo' and self.sensor == 'ept') \
