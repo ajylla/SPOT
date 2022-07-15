@@ -38,19 +38,17 @@ class Event:
         self.peak_time = None
         self.fig = None
         self.bg_mean = None
-        self.output = {
-            "flux_series" : self.flux_series,
-            "onset_stats" : self.onset_stats,
-            "onset_found" : self.onset_found,
-            "onset" : self.onset,
-            "peak_flux" : self.peak_flux,
-            "peak_time" : self.peak_time,
-            "fig": self.fig,
-            "bg_mean" : self.bg_mean
-                      }
+        self.output = {"flux_series": self.flux_series,
+                       "onset_stats": self.onset_stats,
+                       "onset_found": self.onset_found,
+                       "onset": self.onset,
+                       "peak_flux": self.peak_flux,
+                       "peak_time": self.peak_time,
+                       "fig": self.fig,
+                       "bg_mean": self.bg_mean
+                       }
 
         self.load_all_viewing()
-
 
     def update_onset_attributes(self, flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean):
         """
@@ -66,17 +64,15 @@ class Event:
         self.bg_mean = bg_mean
 
         # also remember to update the dictionary, it won't update automatically
-        self.output = {
-            "flux_series" : self.flux_series,
-            "onset_stats" : self.onset_stats,
-            "onset_found" : self.onset_found,
-            "onset" : self.onset,
-            "peak_flux" : self.peak_flux,
-            "peak_time" : self.peak_time,
-            "fig": self.fig,
-            "bg_mean" : self.bg_mean
-                      }
-
+        self.output = {"flux_series": self.flux_series,
+                       "onset_stats": self.onset_stats,
+                       "onset_found": self.onset_found,
+                       "onset": self.onset,
+                       "peak_flux": self.peak_flux,
+                       "peak_time": self.peak_time,
+                       "fig": self.fig,
+                       "bg_mean": self.bg_mean
+                       }
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
                   autodownload=True, threshold=None):
@@ -96,30 +92,30 @@ class Event:
             if(self.sensor == 'sept'):
                 if self.species in ["p", "i"]:
                     df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
-                                                        startdate=self.start_date,
-                                                        enddate=self.end_date,
-                                                        spacecraft=self.spacecraft,
-                                                        # sept_species=self.species,
-                                                        sept_species='p',
-                                                        sept_viewing=viewing,
-                                                        resample=None,
-                                                        path=self.data_path)
+                                                           startdate=self.start_date,
+                                                           enddate=self.end_date,
+                                                           spacecraft=self.spacecraft,
+                                                           # sept_species=self.species,
+                                                           sept_species='p',
+                                                           sept_viewing=viewing,
+                                                           resample=None,
+                                                           path=self.data_path)
                     df_e, channels_dict_df_e = [], []
-                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e 
+                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e
 
                 if self.species == "e":
                     df_e, channels_dict_df_e = stereo_load(instrument=self.sensor,
-                                                        startdate=self.start_date,
-                                                        enddate=self.end_date,
-                                                        spacecraft=self.spacecraft,
-                                                        # sept_species=self.species,
-                                                        sept_species='e',
-                                                        sept_viewing=viewing,
-                                                        resample=None,
-                                                        path=self.data_path)
+                                                           startdate=self.start_date,
+                                                           enddate=self.end_date,
+                                                           spacecraft=self.spacecraft,
+                                                           # sept_species=self.species,
+                                                           sept_species='e',
+                                                           sept_viewing=viewing,
+                                                           resample=None,
+                                                           path=self.data_path)
 
                     df_i, channels_dict_df_i = [], []
-                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e 
+                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e
 
             if(self.sensor == 'het'):
                 df, meta = stereo_load(instrument=self.sensor,
@@ -950,7 +946,7 @@ class Event:
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
-        
+
         # update class attributes before returning variables:
         self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux.values[0], peak_time, fig, bg_mean)
 
