@@ -8,6 +8,7 @@ import pandas as pd
 from matplotlib.dates import DateFormatter
 from matplotlib.offsetbox import AnchoredText
 from pandas.tseries.frequencies import to_offset
+from psp_isois_loader import calc_av_en_flux_PSP_EPIHI, calc_av_en_flux_PSP_EPILO, psp_isois_load
 from soho_loader import calc_av_en_flux_ERNE, soho_load
 from solo_epd_loader import epd_load
 from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
@@ -38,19 +39,17 @@ class Event:
         self.peak_time = None
         self.fig = None
         self.bg_mean = None
-        self.output = {
-            "flux_series" : self.flux_series,
-            "onset_stats" : self.onset_stats,
-            "onset_found" : self.onset_found,
-            "onset" : self.onset,
-            "peak_flux" : self.peak_flux,
-            "peak_time" : self.peak_time,
-            "fig": self.fig,
-            "bg_mean" : self.bg_mean
-                      }
+        self.output = {"flux_series": self.flux_series,
+                       "onset_stats": self.onset_stats,
+                       "onset_found": self.onset_found,
+                       "onset": self.onset,
+                       "peak_flux": self.peak_flux,
+                       "peak_time": self.peak_time,
+                       "fig": self.fig,
+                       "bg_mean": self.bg_mean
+                       }
 
         self.load_all_viewing()
-
 
     def update_onset_attributes(self, flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean):
         """
@@ -66,17 +65,15 @@ class Event:
         self.bg_mean = bg_mean
 
         # also remember to update the dictionary, it won't update automatically
-        self.output = {
-            "flux_series" : self.flux_series,
-            "onset_stats" : self.onset_stats,
-            "onset_found" : self.onset_found,
-            "onset" : self.onset,
-            "peak_flux" : self.peak_flux,
-            "peak_time" : self.peak_time,
-            "fig": self.fig,
-            "bg_mean" : self.bg_mean
-                      }
-
+        self.output = {"flux_series": self.flux_series,
+                       "onset_stats": self.onset_stats,
+                       "onset_found": self.onset_found,
+                       "onset": self.onset,
+                       "peak_flux": self.peak_flux,
+                       "peak_time": self.peak_time,
+                       "fig": self.fig,
+                       "bg_mean": self.bg_mean
+                       }
 
     def load_data(self, spacecraft, sensor, viewing, data_level,
                   autodownload=True, threshold=None):
@@ -96,30 +93,30 @@ class Event:
             if(self.sensor == 'sept'):
                 if self.species in ["p", "i"]:
                     df_i, channels_dict_df_i = stereo_load(instrument=self.sensor,
-                                                        startdate=self.start_date,
-                                                        enddate=self.end_date,
-                                                        spacecraft=self.spacecraft,
-                                                        # sept_species=self.species,
-                                                        sept_species='p',
-                                                        sept_viewing=viewing,
-                                                        resample=None,
-                                                        path=self.data_path)
+                                                           startdate=self.start_date,
+                                                           enddate=self.end_date,
+                                                           spacecraft=self.spacecraft,
+                                                           # sept_species=self.species,
+                                                           sept_species='p',
+                                                           sept_viewing=viewing,
+                                                           resample=None,
+                                                           path=self.data_path)
                     df_e, channels_dict_df_e = [], []
-                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e 
+                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e
 
                 if self.species == "e":
                     df_e, channels_dict_df_e = stereo_load(instrument=self.sensor,
-                                                        startdate=self.start_date,
-                                                        enddate=self.end_date,
-                                                        spacecraft=self.spacecraft,
-                                                        # sept_species=self.species,
-                                                        sept_species='e',
-                                                        sept_viewing=viewing,
-                                                        resample=None,
-                                                        path=self.data_path)
+                                                           startdate=self.start_date,
+                                                           enddate=self.end_date,
+                                                           spacecraft=self.spacecraft,
+                                                           # sept_species=self.species,
+                                                           sept_species='e',
+                                                           sept_viewing=viewing,
+                                                           resample=None,
+                                                           path=self.data_path)
 
                     df_i, channels_dict_df_i = [], []
-                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e 
+                    return df_i, df_e, channels_dict_df_i, channels_dict_df_e
 
             if(self.sensor == 'het'):
                 df, meta = stereo_load(instrument=self.sensor,
@@ -160,6 +157,24 @@ class Event:
                                             threshold=self.threshold)
 
                 return df_i, df_e, meta_i, meta_e
+
+        if(self.spacecraft.lower() == 'psp'):
+            if(self.sensor.lower() == 'isois-epihi'):
+                df, meta = psp_isois_load(dataset='PSP_ISOIS-EPIHI_L2-HET-RATES60',
+                                          startdate=self.start_date,
+                                          enddate=self.end_date,
+                                          path=self.data_path,
+                                          resample=None)
+                return df, meta
+            if(self.sensor.lower() == 'isois-epilo'):
+                df, meta = psp_isois_load(dataset='PSP_ISOIS-EPILO_L2-PE',
+                                          startdate=self.start_date,
+                                          enddate=self.end_date,
+                                          path=self.data_path,
+                                          resample=None,
+                                          epilo_channel='F',
+                                          epilo_threshold=self.threshold)
+                return df, meta
 
     def load_all_viewing(self):
 
@@ -238,6 +253,23 @@ class Event:
                 self.current_i_energies = self.meta_i
                 self.current_e_energies = self.meta_e
 
+        if(self.spacecraft.lower() == 'psp'):
+            if(self.sensor.lower() == 'isois-epihi'):
+                # Note: load_data(viewing='all') doesn't really has an effect, but for PSP/ISOIS-EPIHI all viewings are always loaded anyhow.
+                self.df, self.meta = self.load_data(self.spacecraft, self.sensor, 'all', self.data_level)
+                self.df_e = self.df.filter(like='Electrons_Rate_')
+                self.current_e_energies = self.meta
+                self.df_i = self.df.filter(like='H_Flux_')
+                self.current_i_energies = self.meta
+            if(self.sensor.lower() == 'isois-epilo'):
+                # Note: load_data(viewing='all') doesn't really has an effect, but for PSP/ISOIS-EPILO all viewings are always loaded anyhow.
+                self.df, self.meta = self.load_data(self.spacecraft, self.sensor, 'all', self.data_level, threshold=self.threshold)
+                self.df_e = self.df.filter(like='Electron_CountRate_')
+                self.current_e_energies = self.meta
+                # protons not yet included in PSP/ISOIS-EPILO dataset
+                # self.df_i = self.df.filter(like='H_Flux_')
+                # self.current_i_energies = self.meta
+
     def choose_data(self, viewing):
 
         if(self.spacecraft == 'solo'):
@@ -301,6 +333,17 @@ class Event:
                 col_list_e = [col for col in self.df_e.columns if col.endswith(str(viewing))]
                 self.current_df_i = self.df_i[col_list_i]
                 self.current_df_e = self.df_e[col_list_e]
+
+        if(self.spacecraft.lower() == 'psp'):
+            if(self.sensor.lower() == 'isois-epihi'):
+                # viewing = 'A' or 'B'
+                self.current_df_e = self.df_e[self.df_e.columns[self.df_e.columns.str.startswith(viewing.upper())]]
+                self.current_df_i = self.df_i[self.df_i.columns[self.df_i.columns.str.startswith(viewing.upper())]]
+            if(self.sensor.lower() == 'isois-epilo'):
+                # viewing = '0' to '7'
+                self.current_df_e = self.df_e[self.df_e.columns[self.df_e.columns.str.endswith(viewing)]]
+                # protons not yet included in PSP/ISOIS-EPILO dataset
+                # self.current_df_i = self.df_i[self.df_i.columns[self.df_i.columns.str.endswith(viewing)]]
 
     def calc_av_en_flux_HET(self, df, energies, en_channel):
 
@@ -630,6 +673,8 @@ class Event:
             flux_series = df_flux  # [channel]
         if(self.spacecraft.lower() == 'wind'):
             flux_series = df_flux  # [channel]
+        if(self.spacecraft.lower() == 'psp'):
+            flux_series = df_flux[channel]
         date = flux_series.index
 
         if ylim is None:
@@ -669,6 +714,9 @@ class Event:
             df_flux_peak = df_flux[df_flux == df_flux.max()]
         if(self.spacecraft == 'wind'):
             df_flux_peak = df_flux[df_flux == df_flux.max()]
+        if(self.spacecraft == 'psp'):
+            # df_flux_peak = df_flux[df_flux == df_flux.max()]
+            df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
         self.print_info("Flux peak", df_flux_peak)
         self.print_info("Onset time", onset_stats[-1])
         self.print_info("Mean of background intensity",
@@ -769,12 +817,13 @@ class Event:
         # Onset label
         if(onset_found):
 
-            if(self.spacecraft == 'solo'):
+            if(self.spacecraft == 'solo' or self.spacecraft == 'psp'):
                 plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
                                       f"Peak flux: {df_flux_peak['flux'][0]:.2E}",
                                       prop=dict(size=13), frameon=True,
                                       loc=(4))
-            if(self.spacecraft[:2].lower() == 'st' or self.spacecraft == 'soho' or self.spacecraft == 'wind'):
+            # if(self.spacecraft[:2].lower() == 'st' or self.spacecraft == 'soho' or self.spacecraft == 'wind'):
+            else:
                 plabel = AnchoredText(f"Onset time: {str(onset_stats[-1])[:19]}\n"
                                       f"Peak flux: {df_flux_peak.values[0]:.2E}",
                                       prop=dict(size=13), frameon=True,
@@ -820,6 +869,7 @@ class Event:
             channels = (channels,)
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') \
+                or (self.spacecraft.lower() == 'psp' and self.sensor.startswith('isois')) \
                 or (self.spacecraft.lower() == 'solo' and self.sensor == 'ept') \
                 or (self.spacecraft.lower() == 'solo' and self.sensor == 'het') \
                 or (self.spacecraft.lower() == 'wind' and self.sensor == '3dp'):
@@ -939,6 +989,38 @@ class Event:
                     df_flux = df_flux*1e6
                     en_channel_string = self.current_e_energies['channels_dict_df']['Bins_Text'][f'ENERGY_{channels}']
 
+        if(self.spacecraft.lower() == 'psp'):
+            if(self.sensor.lower() == 'isois-epihi'):
+                if(self.species in ['p', 'i']):
+                    # We're using here only the HET instrument of EPIHI (and not LET1 or LET2)
+                    df_flux, en_channel_string =\
+                        calc_av_en_flux_PSP_EPIHI(df=self.current_df_i,
+                                                  energies=self.current_i_energies,
+                                                  en_channel=channels,
+                                                  species='p',
+                                                  instrument='het',
+                                                  viewing=viewing.upper())
+                if(self.species == 'e'):
+                    # We're using here only the HET instrument of EPIHI (and not LET1 or LET2)
+                    df_flux, en_channel_string =\
+                        calc_av_en_flux_PSP_EPIHI(df=self.current_df_e,
+                                                  energies=self.current_e_energies,
+                                                  en_channel=channels,
+                                                  species='e',
+                                                  instrument='het',
+                                                  viewing=viewing.upper())
+            if(self.sensor.lower() == 'isois-epilo'):
+                if(self.species == 'e'):
+                    # We're using here only the F channel of EPILO (and not E or G)
+                    df_flux, en_channel_string =\
+                        calc_av_en_flux_PSP_EPILO(df=self.current_df_e,
+                                                  en_dict=self.current_e_energies,
+                                                  en_channel=channels,
+                                                  species='e',
+                                                  mode='pe',
+                                                  chan='F',
+                                                  viewing=viewing)
+
         if(resample_period is not None):
 
             df_averaged = self.resample(df_flux, resample_period)
@@ -950,7 +1032,7 @@ class Event:
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length,
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
-        
+
         # update class attributes before returning variables:
         self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux.values[0], peak_time, fig, bg_mean)
 
