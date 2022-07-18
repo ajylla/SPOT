@@ -992,6 +992,7 @@ class Event:
         if(self.spacecraft.lower() == 'psp'):
             if(self.sensor.lower() == 'isois-epihi'):
                 if(self.species in ['p', 'i']):
+                    # We're using here only the HET instrument of EPIHI (and not LET1 or LET2)
                     df_flux, en_channel_string =\
                         calc_av_en_flux_PSP_EPIHI(df=self.current_df_i,
                                                   energies=self.current_i_energies,
@@ -1000,6 +1001,7 @@ class Event:
                                                   instrument='het',
                                                   viewing=viewing.upper())
                 if(self.species == 'e'):
+                    # We're using here only the HET instrument of EPIHI (and not LET1 or LET2)
                     df_flux, en_channel_string =\
                         calc_av_en_flux_PSP_EPIHI(df=self.current_df_e,
                                                   energies=self.current_e_energies,
@@ -1009,6 +1011,7 @@ class Event:
                                                   viewing=viewing.upper())
             if(self.sensor.lower() == 'isois-epilo'):
                 if(self.species == 'e'):
+                    # We're using here only the F channel of EPILO (and not E or G)
                     df_flux, en_channel_string =\
                         calc_av_en_flux_PSP_EPILO(df=self.current_df_e,
                                                   en_dict=self.current_e_energies,
