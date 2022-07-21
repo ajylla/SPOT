@@ -248,8 +248,8 @@ class Event:
             if(self.sensor.lower() == '3dp'):
                 self.df_i, self.df_e, self.meta_i, self.meta_e = \
                     self.load_data(self.spacecraft, self.sensor, 'None', self.data_level, threshold=self.threshold)
-                self.df_i = self.df_i.filter(like='FLUX')
-                self.df_e = self.df_e.filter(like='FLUX')
+                # self.df_i = self.df_i.filter(like='FLUX')
+                # self.df_e = self.df_e.filter(like='FLUX')
                 self.current_i_energies = self.meta_i
                 self.current_e_energies = self.meta_e
 
