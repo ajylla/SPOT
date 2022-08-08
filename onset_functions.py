@@ -650,7 +650,7 @@ class Event:
 
         return [ma, md, k_round, norm_channel, cusum, onset_time]
 
-    def onset_analysis(self, df_flux, windowstart, windowlen, channels_dict,
+    def onset_analysis(self, df_flux, windowstart, windowlen, windowrange, channels_dict,
                        channel='flux', cusum_window=30, yscale='log',
                        ylim=None, xlim=None):
 
@@ -682,10 +682,15 @@ class Event:
             ylim = [np.nanmin(flux_series[flux_series > 0]),
                     np.nanmax(flux_series) * 3]
 
-        # dates for start and end of the averaging processes
-        avg_start = date[0] + datetime.timedelta(hours=windowstart)
-        # ending time is starting time + a given timedelta in hours
-        avg_end = avg_start + datetime.timedelta(hours=windowlen)
+        # windowrange is by default None, and then we define the start and stop with integer hours
+        if windowrange is None:
+            # dates for start and end of the averaging processes
+            avg_start = date[0] + datetime.timedelta(hours=windowstart)
+            # ending time is starting time + a given timedelta in hours
+            avg_end = avg_start + datetime.timedelta(hours=windowlen)
+        
+        else:
+            avg_start, avg_end = windowrange[0], windowrange[1]
 
         if xlim is None:
 
@@ -862,7 +867,7 @@ class Event:
 
         return flux_series, onset_stats, onset_found, df_flux_peak, df_flux_peak.index[0], fig, background_stats[0]
 
-    def analyse(self, viewing, bg_start, bg_length, resample_period=None,
+    def analyse(self, viewing, bg_start=None, bg_length=None, background_range=None, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
         if isinstance(channels, int):
@@ -1030,7 +1035,7 @@ class Event:
             df_averaged = df_flux
 
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
-            self.onset_analysis(df_averaged, bg_start, bg_length,
+            self.onset_analysis(df_averaged, bg_start, bg_length, background_range,
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
 
         # update class attributes before returning variables:
