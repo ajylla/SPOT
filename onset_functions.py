@@ -870,8 +870,10 @@ class Event:
     def analyse(self, viewing, bg_start=None, bg_length=None, background_range=None, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
 
+        # This check was initially transforming the 'channels' integer to a tuple of len==1, but that
+        # raised a ValueError with solo/ept. However, a list of len==1 is somehow okay. 
         if isinstance(channels, int):
-            channels = (channels,)
+            channels = [channels]
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') \
                 or (self.spacecraft.lower() == 'psp' and self.sensor.startswith('isois')) \
@@ -1037,6 +1039,10 @@ class Event:
         flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean =\
             self.onset_analysis(df_averaged, bg_start, bg_length, background_range,
                                 en_channel_string, yscale=yscale, cusum_window=cusum_window, xlim=xlim)
+
+        # At least in the case of solo/ept the peak_flux is a pandas Dataframe, but it should be a Series
+        if isinstance(peak_flux,pd.core.frame.DataFrame):
+            peak_flux = pd.Series(data=peak_flux.values[0])
 
         # update class attributes before returning variables:
         self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux.values[0], peak_time, fig, bg_mean)
