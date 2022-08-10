@@ -1,11 +1,16 @@
 
 import os
 import datetime
+from turtle import speed
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import matplotlib.colors as cl
 import numpy as np
 import pandas as pd
+import astropy.units as u
+import astropy.constants as const
 from matplotlib.dates import DateFormatter
+from matplotlib.ticker import ScalarFormatter
 from matplotlib.offsetbox import AnchoredText
 from pandas.tseries.frequencies import to_offset
 from psp_isois_loader import calc_av_en_flux_PSP_EPIHI, calc_av_en_flux_PSP_EPILO, psp_isois_load
@@ -15,6 +20,7 @@ from stereo_loader import calc_av_en_flux_HET as calc_av_en_flux_ST_HET
 from stereo_loader import calc_av_en_flux_SEPT, stereo_load
 from wind_3dp_loader import wind3dp_load
 
+from IPython.core.display import display
 
 class Event:
 
@@ -1068,3 +1074,348 @@ class Event:
         self.update_onset_attributes(flux_series, onset_stats, onset_found, peak_flux.values[0], peak_time, fig, bg_mean)
 
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
+
+
+    def dynamic_spectrum(self, view, cmap='magma', xlim=None, resample=None, save=False):
+        """
+        Shows all the different energy channels in a single 2D plot, and color codes the corresponding intensity*energy^2 by a colormap.
+
+        Parameters:
+        -----------
+        cmap : str, default='magma'
+                The colormap for the dynamic spectrum plot
+        xlim : 2-tuple of datetime strings (str, str)
+                Pandas-compatible datetime strings for the start and stop of the figure
+        resample : str
+                Pandas-compatibe resampling string, e.g. '10min' or '30s'
+        save : bool
+                Saves the image
+        """
+
+        # Event attributes
+        spacecraft = self.spacecraft
+        instrument = self.sensor
+        species = self.species
+
+        self.choose_data(view)
+
+        if species in ["electron", 'e']:
+            particle_data = self.current_df_e
+            s_identifier = "electrons"
+        else:
+            particle_data = self.current_df_i
+            s_identifier = "protons"
+
+        # Do resampling only if requested
+        if resample is not None:
+            particle_data = particle_data.resample(resample).mean()
+
+        if xlim is None:
+            df = particle_data[:]
+            t_start, t_end = df.index[0], df.index[-1]
+        else:
+            t_start, t_end = pd.to_datetime(xlim[0]), pd.to_datetime(xlim[1])
+            df = particle_data.loc[(particle_data.index >= t_start) & (particle_data.index < t_end)]
+
+
+        # In practice this seeks the date on which the highest flux is observed
+        date_of_event = df.iloc[np.argmax(df[df.columns[0]])].name.date()
+
+        # Assert time and channel bins
+        time = df.index
+
+        # The low and high ends of each energy channel
+        e_low, e_high = get_energy_channels(self) #this function return energy in keVs
+        e_low, e_high = e_low*1000., e_high*1000.
+
+        # The mean energy of each channel in eVs
+        mean_energies_eV = np.sqrt(np.multiply(e_low,e_high))
+
+        # Energy boundaries of plotted bins in eV
+        ens = np.append(e_low,e_high[-1])
+
+        y_arr = ens*1e-3
+
+        # Set image pixel length and height
+        image_len = len(time)
+        image_hei = len(y_arr)-1
+
+        # Init the grid
+        grid = np.zeros((image_len, image_hei))
+
+        # Energy is in MeVs -> multiplier squared is 1e-6*1e-6 = 1e-12
+        energy_multiplier_squared = 1e-12
+
+        # Assign grid bins -> intensity * energy^2
+        for i, channel in enumerate(df):
+
+            grid[:,i] = df[channel]*(mean_energies_eV[i]*mean_energies_eV[i]*energy_multiplier_squared) # Intensity*Energy^2, and energy is in eV -> tranform to keV or MeV
+
+
+        # Finally cut the last entry and transpose the grid so that it can be plotted correctly
+        grid = grid[:-1,:]
+        grid = grid.T
+
+        # ---only plotting_commands from this point----->
+
+        # Some visual parameters
+        plt.rcParams['axes.linewidth'] = 1.8
+        plt.rcParams['font.size'] = 16
+        plt.rcParams['pcolor.shading'] = 'auto'
+
+        normscale = cl.LogNorm()
+        clabel = r"Intensity $\cdot$ $E^2$ \n [MeV/(cm$^{2}$ sr s)$]"
+
+        # Init the figure and axes
+        figsize=[27,9]
+        fig, ax = plt.subplots(figsize=figsize)
+
+        maskedgrid = np.where(grid==0, 0, 1)
+        maskedgrid = np.ma.masked_where(maskedgrid==1, maskedgrid)
+
+        # Colormesh
+        cplot = ax.pcolormesh(time, y_arr, grid, shading='auto', cmap=cmap, norm=normscale)
+        greymesh = ax.pcolormesh(time, y_arr, maskedgrid, shading='auto', cmap='Greys', vmin=-1, vmax=1)
+
+        # Colorbar
+        cb = fig.colorbar(cplot, orientation='vertical')
+        cb.set_label(clabel)
+
+        # x-axis settings
+        ax.set_xlabel("Time [HH:MM \ndd-mm]")
+        ax.xaxis_date()
+        ax.set_xlim(t_start, t_end)
+        #ax.xaxis.set_major_locator(mdates.HourLocator(interval = 1))
+        utc_dt_format1 = DateFormatter('%H:%M \n%m-%d')
+        ax.xaxis.set_major_formatter(utc_dt_format1)
+        #ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 5))
+
+        # y-axis settings
+        ax.set_yscale('log')
+        ax.set_ylim(np.nanmin(y_arr), np.nanmax(y_arr))
+        ax.set_yticks([int(yval) for yval in y_arr])
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+
+        # gets rid of minor ticks and labels
+        ax.yaxis.set_tick_params(length=0, width=0, which='minor', labelsize=0.)
+        ax.yaxis.set_tick_params(length=9., width=1.5, which='major')
+
+        ax.set_ylabel("Energy [keV]")
+
+        # Title
+        plt.title(f"{spacecraft.upper()} {instrument.upper()} {s_identifier}, {date_of_event}")
+
+        # saving of the figure
+        if save:
+            plt.savefig(f'plots/{spacecraft}_{instrument}_{date_of_event}_dynamic_spectra.png', transparent=False, 
+                    facecolor='white', bbox_inches='tight')
+
+        plt.show()
+
+
+    def tsa_plot(self, selection = None, resample = None):
+        """
+        Makes an interactive time-shift plot
+
+        Parameters:
+        ----------
+        selection : 2-tuple
+                    The indices of the channels one wishes to plot. End-exclusive.
+        resample : str
+                    Pandas-compatible resampling time-string, e.g. "2min" or "50s"
+        guess : float, int
+                    Initial guess for the path length in AU, default = 1.2
+        """
+
+        import ipywidgets as widgets
+
+        # inits
+        spacecraft = self.spacecraft
+        instrument = self.instrument
+        species =  "electrons" if self.species.lower() == "ele" else "ions"
+        intensity_unit = self.intensity_unit
+
+        if self.direction is not None:
+            direction = self.direction.lower()
+
+        meters_per_AU = 1 * u.AU.to(u.m)
+
+        particle_speeds = self.calculate_particle_speeds()
+
+        # t_0 = t - L/v -> L/v is the coefficient that shifts the x-axis
+        shift_coefficients = [meters_per_AU/v for v in particle_speeds]
+
+        stepsize = 0.05
+        min_slider_val, max_slider_val = 0.0, 1.50
+
+        # make a copy to make sure original data is not altered
+        dataframe = self.data.copy()
+
+        # only the selected channels will be plotted
+        if selection is not None:
+            selected_channels = dataframe.columns[selection[0]:selection[1]]
+        else:
+            selected_channels = dataframe.columns
+
+        # Change 0-values to nan purely for plotting purposes, since we're not doing any
+        # calculations with them
+        dataframe[dataframe[selected_channels] == 0] = np.nan
+
+        # channel energy strs:
+        try:
+            channel_energies = [self.data_dict[key] for key in selected_channels]
+
+        except KeyError:
+
+            try:
+                channel_energies = [self.data_dict["Energy_Bin_Str"][key] for key in selected_channels]
+            
+            except KeyError:
+                channel_energies = [get_solo_channel_bin(self, channel_str) for channel_str in selected_channels]
+
+
+        # creation of the figure
+        fig, ax = plt.subplots(figsize=(17,7))
+
+        # settings of title
+        if direction is not None:
+            ax.set_title(f"{spacecraft} {instrument} {direction}, {species}")
+        else:
+            ax.set_title(f"{spacecraft} {instrument}, {species}")
+
+        ax.grid(True)
+
+        # settings for y and x axes
+        ax.set_yscale("log")
+        ax.set_ylabel(intensity_unit)
+
+        ax.set_xlabel(r"$t_{0} = t - \frac{L}{v}$")
+        ax.set_xlim(self.data.index[0], self.data.index[-1])
+        ax.xaxis_date()
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M\n%Y-%m-%d'))
+
+        # cosmetic settings
+        plt.rcParams['axes.linewidth'] = 1.5
+        plt.rcParams['font.size'] = 14
+
+
+        # housekeeping lists
+        series_natural = []
+        series_norm = []
+        plotted_natural = []
+        plotted_norm = []
+
+        # go through the selected channels to create individual series and plot them
+        for i, channel in enumerate(selected_channels):
+
+            # construct series and its normalized counterpart
+            series = flux2series(dataframe[channel], dataframe.index, resample)
+            series_normalized = flux2series(series.values/np.nanmax(series.values), series.index, resample)
+
+            # store all series to arrays for later referencing
+            series_natural.append(series)
+            series_norm.append(series_normalized)
+
+            # save the plotted lines, NOTICE that they come inside a list of len==1
+            p1 = ax.step(series.index, series.values, c=f"C{i}", visible=True, label=channel_energies[i])
+            p2 = ax.step(series_normalized.index, series_normalized.values, c=f"C{i}", visible=False) # normalized lines are initially hidden
+
+            # store plotted line objects for later referencing
+            plotted_natural.append(p1[0])
+            plotted_norm.append(p2[0])
+
+        plt.legend(loc='upper center', bbox_to_anchor=(1.0, 1.1), fancybox=True, shadow=False, ncol=1, fontsize = 9)
+
+        # widget objects, slider and button
+        slider = widgets.FloatSlider(value = min_slider_val,
+                                    min = min_slider_val,
+                                    max = max_slider_val,
+                                    step = stepsize,
+                                    continuous_update = True,
+                                    description = "Path length L: "
+                                    )
+
+        button = widgets.Checkbox(value = False,
+                                description = "Normalize",
+                                indent=True
+                                )
+
+        # timeshift connects the slider to the shifting of the plotted curves
+        def timeshift(sliderobject):
+
+            # shift the x-values (times) by the timedelta
+            for i, line in enumerate(plotted_natural):
+
+                # calculate the timedelta in seconds corresponding to the change in the path length
+                # The relevant part here is sliderobject["old"]! It saves the previous value of the slider!
+                timedelta_sec = shift_coefficients[i]*(slider.value - sliderobject["old"])
+
+                # Update the time value
+                line.set_xdata(line.get_xdata() - pd.Timedelta(seconds=timedelta_sec))
+
+            for i, line in enumerate(plotted_norm):
+
+                # calculate the timedelta in seconds corresponding to the change in the path length
+                # The relevant part here is sliderobject["old"]! It saves the previous value of the slider!
+                timedelta_sec = shift_coefficients[i]*(slider.value - sliderobject["old"])
+
+                # Update the time value
+                line.set_xdata(line.get_xdata() - pd.Timedelta(seconds=timedelta_sec))
+
+            # Effectively this refreshes the figure
+            fig.canvas.draw_idle()
+
+
+        # this function connects the button to switching visibility of natural / normed curves
+        def normalize_axes(button):
+
+            # flip the truth values of natural and normed intensity visibility
+            for line in plotted_natural:
+                line.set_visible(not line.get_visible())
+
+            for line in plotted_norm:
+                line.set_visible(not line.get_visible())
+
+            # Effectively this refreshes the figure
+            fig.canvas.draw_idle()
+
+
+
+        slider.observe(timeshift, names="value")
+        display(slider)
+        
+        button.observe(normalize_axes)
+        display(button)
+
+
+def flux2series(flux, dates, cadence=None):
+    """
+    Converts an array of observed particle flux + timestamps into a pandas series
+    with the desired cadence.
+
+    Parameters:
+    -----------
+    flux: an array of observed particle fluxes
+    dates: an array of corresponding dates/times
+    cadence: str - desired spacing between the series elements e.g. '1s' or '5min'
+
+    Returns:
+    ----------
+    flux_series: Pandas Series object indexed by the resampled cadence
+    """
+
+    # from pandas.tseries.frequencies import to_offset
+
+    # set up the series object
+    flux_series = pd.Series(flux, index=dates)
+    
+    # if no cadence given, then just return the series with the original
+    # time resolution
+    if cadence is not None:
+        try:
+            flux_series = flux_series.resample(cadence, origin='start').mean()
+            flux_series.index = flux_series.index + pd.tseries.frequencies.to_offset(pd.Timedelta(cadence)/2)
+        except ValueError:
+            raise Warning(f"Your 'resample' option of [{cadence}] doesn't seem to be a proper Pandas frequency!")
+
+    return flux_series
