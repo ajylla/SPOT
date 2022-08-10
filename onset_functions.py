@@ -21,6 +21,21 @@ class Event:
     def __init__(self, start_date, end_date, spacecraft, sensor,
                  species, data_level, data_path, threshold=None):
 
+        if spacecraft == "Solar Orbiter":
+            spacecraft = "solo"
+        if spacecraft == "STEREO-A":
+            spacecraft = "sta"
+        if spacecraft == "STEREO-B":
+            spacecraft = "stb"
+
+        if sensor in ["ERNE-HED"]:
+            sensor = "ERNE"
+
+        if species == "protons":
+            species = 'p'
+        if species == "electrons":
+            species = 'e'
+
         self.start_date = start_date
         self.end_date = end_date
         self.spacecraft = spacecraft.lower()
@@ -751,9 +766,14 @@ class Event:
                        label="Onset time")
 
         # Flux peak line (first peak only, if there's multiple)
-        ax.axvline(df_flux_peak.index[0], linewidth=1.5,
-                   color=color_dict['flux_peak'], linestyle='-',
-                   label="Peak time")
+        try:
+            ax.axvline(df_flux_peak.index[0], linewidth=1.5,
+                    color=color_dict['flux_peak'], linestyle='-',
+                    label="Peak time")
+        
+        except IndexError:
+            exceptionmsg = "IndexError! Maybe you didn't adjust background_range or plot_range correctly?"
+            raise Exception(exceptionmsg)
 
         # background mean
         ax.axhline(onset_stats[0], linewidth=2,

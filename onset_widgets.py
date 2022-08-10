@@ -7,9 +7,10 @@ from importlib.resources import path
 import ipywidgets as widgets
 
 # a list of available spacecraft:
-list_of_sc = ["STEREO-A", "STEREO-B", "Solar Orbiter", "Bepicolombo", "SOHO"]
+# list_of_sc = ["STEREO-A", "STEREO-B", "Solar Orbiter", "Bepicolombo", "SOHO"]
+list_of_sc = ["STEREO-A", "STEREO-B", "Solar Orbiter", "SOHO"]
 
-stereo_instr = ["LET", "SEPT", "HET"]
+stereo_instr = ["SEPT", "HET"] #["LET", "SEPT", "HET"]
 solo_instr = ["EPT", "HET"]
 bepi_instr = ["SIXS-P"]
 soho_instr = ["ERNE-HED"]
@@ -56,9 +57,9 @@ sensor_drop = widgets.Dropdown(
                                 )
 
 view_drop = widgets.Dropdown(
-                                options = [],
+                                options = view_dict[(spacecraft_drop.value, sensor_drop.value)],
                                 description = "Viewing:",
-                                disabled = True
+                                disabled = False
                                 )
 
 species_drop = widgets.Dropdown(
@@ -76,8 +77,9 @@ def update_sensor_options(val):
 # updates the options and availability of view_drop menu
 def update_view_options(val):
     try:
-        view_drop.options = view_dict[(spacecraft_drop.value, sensor_drop.value)]
         view_drop.disabled = False
+        view_drop.options = view_dict[(spacecraft_drop.value, sensor_drop.value)]
+        view_drop.value = view_drop.options[0]
     except KeyError:
         view_drop.disabled = True
         view_drop.value = None
