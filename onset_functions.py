@@ -1082,6 +1082,8 @@ class Event:
 
         Parameters:
         -----------
+        view : str or None
+                The viewing direction of the sensor 
         cmap : str, default='magma'
                 The colormap for the dynamic spectrum plot
         xlim : 2-tuple of datetime strings (str, str)
@@ -1100,10 +1102,10 @@ class Event:
         self.choose_data(view)
 
         if species in ["electron", 'e']:
-            particle_data = self.current_df_e
+            particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if ch[:2] == "ch"]]
             s_identifier = "electrons"
         else:
-            particle_data = self.current_df_i
+            particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
             s_identifier = "protons"
 
         # Do resampling only if requested
@@ -1125,16 +1127,13 @@ class Event:
         time = df.index
 
         # The low and high ends of each energy channel
-        e_low, e_high = get_energy_channels(self) #this function return energy in keVs
-        e_low, e_high = e_low*1000., e_high*1000.
+        e_lows, e_highs = self.get_channel_energy_values() #this function return energy in eVs
 
         # The mean energy of each channel in eVs
-        mean_energies_eV = np.sqrt(np.multiply(e_low,e_high))
+        mean_energies = np.sqrt(np.multiply(e_lows,e_highs))
 
-        # Energy boundaries of plotted bins in eV
-        ens = np.append(e_low,e_high[-1])
-
-        y_arr = ens*1e-3
+        # Energy boundaries of plotted bins in keVs are the y-axis:
+        y_arr = np.append(e_lows,e_highs[-1]) * 1e-3
 
         # Set image pixel length and height
         image_len = len(time)
@@ -1143,13 +1142,13 @@ class Event:
         # Init the grid
         grid = np.zeros((image_len, image_hei))
 
-        # Energy is in MeVs -> multiplier squared is 1e-6*1e-6 = 1e-12
+        # Display energy in MeVs -> multiplier squared is 1e-6*1e-6 = 1e-12
         energy_multiplier_squared = 1e-12
 
         # Assign grid bins -> intensity * energy^2
         for i, channel in enumerate(df):
 
-            grid[:,i] = df[channel]*(mean_energies_eV[i]*mean_energies_eV[i]*energy_multiplier_squared) # Intensity*Energy^2, and energy is in eV -> tranform to keV or MeV
+            grid[:,i] = df[channel]*(mean_energies[i]*mean_energies[i]*energy_multiplier_squared) # Intensity*Energy^2, and energy is in eV -> tranform to keV or MeV
 
 
         # Finally cut the last entry and transpose the grid so that it can be plotted correctly
@@ -1164,10 +1163,9 @@ class Event:
         plt.rcParams['pcolor.shading'] = 'auto'
 
         normscale = cl.LogNorm()
-        clabel = r"Intensity $\cdot$ $E^2$ \n [MeV/(cm$^{2}$ sr s)$]"
 
         # Init the figure and axes
-        figsize=[27,9]
+        figsize=[27,12]
         fig, ax = plt.subplots(figsize=figsize)
 
         maskedgrid = np.where(grid==0, 0, 1)
@@ -1179,6 +1177,7 @@ class Event:
 
         # Colorbar
         cb = fig.colorbar(cplot, orientation='vertical')
+        clabel = r"Intensity $\cdot$ $E^{2}$" + "\n" + r"[MeV/(cm$^{2}$ sr s)]"
         cb.set_label(clabel)
 
         # x-axis settings
@@ -1386,6 +1385,62 @@ class Event:
         
         button.observe(normalize_axes)
         display(button)
+
+
+    def get_channel_energy_values(self):
+        """
+        A class method to return the energies of each energy channel in a numerical form.
+        
+        Returns: 
+        ---------
+        lower_bounds : list of lower bounds of each energy channel in eVs
+        higher_bounds : list of higher bounds of each energy channel in eVs
+        """
+        # First try the SolO way
+        try:
+
+            energy_df = self.current_energies
+
+        # If that doesn't exist, try STA7STB way
+        except AttributeError:
+
+            energy_df = self.current_i_energies
+
+        # Make sure that the right metadata is loaded
+        if len(energy_df) == 0:
+
+            energy_df = self.current_e_energies
+
+        # Now that we have the correct metadata, extract the column that has channel energy ranges
+        energy_ranges = energy_df["ch_strings"].values
+
+        lower_bounds, higher_bounds = [], []
+        for energy_str in energy_ranges:
+
+            lower_bound, temp = energy_str.split('-')
+            try:
+                higher_bound, energy_unit = temp.split(' ')
+
+            # It could be that THE STRINGS ARE NOT IN A STANDARD FORMAT, so check if
+            # there is an empty space before the second energy value
+            except ValueError:
+                _, higher_bound, energy_unit = temp.split(' ')
+
+            lower_bounds.append(float(lower_bound))
+            higher_bounds.append(float(higher_bound))
+        
+        # Transform lists to numpoy arrays for performance and convenience
+        lower_bounds, higher_bounds = np.asarray(lower_bounds), np.asarray(higher_bounds)
+
+        # Finally before returning the lists, make sure that the unit of energy is eV
+        if energy_unit == "keV":
+            lower_bounds, higher_bounds = lower_bounds * 1e3, higher_bounds * 1e3
+        
+        if energy_unit == "MeV":
+            lower_bounds, higher_bounds = lower_bounds * 1e6, higher_bounds * 1e6
+
+        return lower_bounds, higher_bounds
+
 
 
 def flux2series(flux, dates, cadence=None):
