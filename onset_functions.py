@@ -1101,12 +1101,21 @@ class Event:
 
         self.choose_data(view)
 
-        if species in ["electron", 'e']:
-            particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if ch[:2] == "ch"]]
-            s_identifier = "electrons"
-        else:
-            particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
-            s_identifier = "protons"
+        if self.spacecraft == "solo":
+            if species in ["electron", 'e']:
+                particle_data = self.current_df_e["Electron_Flux"]
+                s_identifier = "electrons"
+            else:
+                particle_data = self.current_df_i["Ion_Flux"]
+                s_identifier = "ions"
+
+        if self.spacecraft[:2] == "st":
+            if species in ["electron", 'e']:
+                particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if ch[:2] == "ch"]]
+                s_identifier = "electrons"
+            else:
+                particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
+                s_identifier = "protons"
 
         # Do resampling only if requested
         if resample is not None:
@@ -1397,22 +1406,30 @@ class Event:
         higher_bounds : list of higher bounds of each energy channel in eVs
         """
         # First try the SolO way
-        try:
+        
+        if self.spacecraft == "solo":
 
-            energy_df = self.current_energies
+            # All solo energies are in the same object
+            energy_dict = self.current_energies
 
-        # If that doesn't exist, try STA7STB way
-        except AttributeError:
+            if self.species == 'e':
+                energy_ranges = energy_dict["Electron_Bins_Text"]
+            else:
+                energy_ranges = energy_dict["Ion_Bins_Text"]
+            
+            # Each element in the list is also a list with len==1, so fix that
+            energy_ranges = [element[0] for element in energy_ranges]
 
-            energy_df = self.current_i_energies
+        if self.spacecraft[:2] == "st":
 
-        # Make sure that the right metadata is loaded
-        if len(energy_df) == 0:
+            # STEREO energies come in two different objects
+            if self.species == 'e':
+                energy_df = self.current_e_energies
+            else:
+                energy_df = self.current_i_energies
 
-            energy_df = self.current_e_energies
-
-        # Now that we have the correct metadata, extract the column that has channel energy ranges
-        energy_ranges = energy_df["ch_strings"].values
+            # Now that we have the correct metadata, extract the column that has channel energy ranges
+            energy_ranges = energy_df["ch_strings"].values
 
         lower_bounds, higher_bounds = [], []
         for energy_str in energy_ranges:
