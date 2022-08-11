@@ -1106,7 +1106,10 @@ class Event:
                 particle_data = self.current_df_e["Electron_Flux"]
                 s_identifier = "electrons"
             else:
-                particle_data = self.current_df_i["Ion_Flux"]
+                try:
+                    particle_data = self.current_df_i["Ion_Flux"]
+                except KeyError:
+                    particle_data = self.current_df_i["H_Flux"]
                 s_identifier = "ions"
 
         if self.spacecraft[:2] == "st":
@@ -1415,7 +1418,10 @@ class Event:
             if self.species == 'e':
                 energy_ranges = energy_dict["Electron_Bins_Text"]
             else:
-                energy_ranges = energy_dict["Ion_Bins_Text"]
+                try:
+                    energy_ranges = energy_dict["Ion_Bins_Text"]
+                except KeyError:
+                    energy_ranges = energy_dict["H_Bins_Text"]
             
             # Each element in the list is also a list with len==1, so fix that
             energy_ranges = [element[0] for element in energy_ranges]
