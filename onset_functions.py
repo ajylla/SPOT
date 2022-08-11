@@ -1108,19 +1108,31 @@ class Event:
             else:
                 try:
                     particle_data = self.current_df_i["Ion_Flux"]
+                    s_identifier = "ions"
                 except KeyError:
                     particle_data = self.current_df_i["H_Flux"]
-                s_identifier = "ions"
+                    s_identifier = "protons"
 
         if self.spacecraft[:2] == "st":
             if species in ["electron", 'e']:
-                particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if ch[:2] == "ch"]]
+                if instrument == "sept":
+                    particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if ch[:2] == "ch"]]
+                else:
+                    particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if "Flux" in ch]]
                 s_identifier = "electrons"
             else:
-                particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
+                if instrument == "sept":
+                    particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
+                else:
+                    particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if "Flux" in ch]]
                 s_identifier = "protons"
 
-        # Do resampling only if requested
+        if self.spacecraft == "soho":
+            particle_data = self.current_df_i
+            s_identifier = "protons"
+
+
+        # Resample only if requested
         if resample is not None:
             particle_data = particle_data.resample(resample).mean()
 
@@ -1408,8 +1420,8 @@ class Event:
         lower_bounds : list of lower bounds of each energy channel in eVs
         higher_bounds : list of higher bounds of each energy channel in eVs
         """
-        # First try the SolO way
-        
+
+        # First check by spacecraft, then by sensor
         if self.spacecraft == "solo":
 
             # All solo energies are in the same object
@@ -1428,14 +1440,30 @@ class Event:
 
         if self.spacecraft[:2] == "st":
 
-            # STEREO energies come in two different objects
-            if self.species == 'e':
-                energy_df = self.current_e_energies
-            else:
-                energy_df = self.current_i_energies
+            # STEREO/SEPT energies come in two different objects
+            if self.sensor == "sept":
+                if self.species == 'e':
+                    energy_df = self.current_e_energies
+                else:
+                    energy_df = self.current_i_energies
 
-            # Now that we have the correct metadata, extract the column that has channel energy ranges
-            energy_ranges = energy_df["ch_strings"].values
+                energy_ranges = energy_df["ch_strings"].values
+
+            # STEREO/HET energies all in the same dictionary
+            else:
+                energy_dict = self.current_energies
+                
+                if self.species == 'e':
+                    energy_ranges = energy_dict["Electron_Bins_Text"]
+                else:
+                    energy_ranges = energy_dict["Proton_Bins_Text"]
+
+                # Each element in the list is also a list with len==1, so fix that
+                energy_ranges = [element[0] for element in energy_ranges]
+
+        if self.spacecraft == "soho":
+
+            energy_ranges = self.current_energies["channels_dict_df_p"]["ch_strings"].values
 
         lower_bounds, higher_bounds = [], []
         for energy_str in energy_ranges:
@@ -1447,12 +1475,19 @@ class Event:
             # It could be that THE STRINGS ARE NOT IN A STANDARD FORMAT, so check if
             # there is an empty space before the second energy value
             except ValueError:
-                _, higher_bound, energy_unit = temp.split(' ')
+                
+                try:
+                    _, higher_bound, energy_unit = temp.split(' ')
+
+                # It could even be that FOR SOME GODFORSAKEN REASON there are empty spaces
+                # between the numbers themselves
+                except ValueError:
+                    higher_bound, energy_unit = temp.split(' ')[1], temp.split(' ')[2]
 
             lower_bounds.append(float(lower_bound))
             higher_bounds.append(float(higher_bound))
         
-        # Transform lists to numpoy arrays for performance and convenience
+        # Transform lists to numpy arrays for performance and convenience
         lower_bounds, higher_bounds = np.asarray(lower_bounds), np.asarray(higher_bounds)
 
         # Finally before returning the lists, make sure that the unit of energy is eV
