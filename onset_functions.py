@@ -1236,14 +1236,18 @@ class Event:
         plt.show()
 
 
-    def tsa_plot(self, selection = None, resample = None):
+    def tsa_plot(self, view, selection = None, xlim = None, resample = None):
         """
         Makes an interactive time-shift plot
 
         Parameters:
         ----------
+        view : str or None
+
         selection : 2-tuple
                     The indices of the channels one wishes to plot. End-exclusive.
+        xlim : 2-tuple
+                    The start and end point of the plot as pandas-compatible datetimes or strings
         resample : str
                     Pandas-compatible resampling time-string, e.g. "2min" or "50s"
         guess : float, int
@@ -1254,25 +1258,56 @@ class Event:
 
         # inits
         spacecraft = self.spacecraft
-        instrument = self.instrument
-        species =  "electrons" if self.species.lower() == "ele" else "ions"
-        intensity_unit = self.intensity_unit
+        instrument = self.sensor
+        species =  self.species
 
-        if self.direction is not None:
-            direction = self.direction.lower()
+        METERS_PER_AU = 1 * u.AU.to(u.m)
 
-        meters_per_AU = 1 * u.AU.to(u.m)
+        self.choose_data(view)
+
+        if self.spacecraft == "solo":
+            if species in ["electron", 'e']:
+                particle_data = self.current_df_e["Electron_Flux"]
+                s_identifier = "electrons"
+            else:
+                try:
+                    particle_data = self.current_df_i["Ion_Flux"]
+                    s_identifier = "ions"
+                except KeyError:
+                    particle_data = self.current_df_i["H_Flux"]
+                    s_identifier = "protons"
+            sc_identifier = "Solar Orbiter"
+
+        if self.spacecraft[:2] == "st":
+            if species in ["electron", 'e']:
+                if instrument == "sept":
+                    particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if ch[:2] == "ch"]]
+                else:
+                    particle_data = self.current_df_e[[ch for ch in self.current_df_e.columns if "Flux" in ch]]
+                s_identifier = "electrons"
+            else:
+                if instrument == "sept":
+                    particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
+                else:
+                    particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if "Flux" in ch]]
+                s_identifier = "protons"
+            sc_identifier = "STEREO-A" if spacecraft[-1] == "a" else "STEREO-B"
+
+        if self.spacecraft == "soho":
+            particle_data = self.current_df_i
+            s_identifier = "protons"
+            sc_identifier = "SOHO"
+
+        # make a copy to make sure original data is not altered
+        dataframe = particle_data.copy()
 
         particle_speeds = self.calculate_particle_speeds()
 
         # t_0 = t - L/v -> L/v is the coefficient that shifts the x-axis
-        shift_coefficients = [meters_per_AU/v for v in particle_speeds]
+        shift_coefficients = [METERS_PER_AU/v for v in particle_speeds]
 
         stepsize = 0.05
-        min_slider_val, max_slider_val = 0.0, 1.50
-
-        # make a copy to make sure original data is not altered
-        dataframe = self.data.copy()
+        min_slider_val, max_slider_val = 0.0, 1.55
 
         # only the selected channels will be plotted
         if selection is not None:
@@ -1285,42 +1320,37 @@ class Event:
         dataframe[dataframe[selected_channels] == 0] = np.nan
 
         # channel energy strs:
-        try:
-            channel_energies = [self.data_dict[key] for key in selected_channels]
-
-        except KeyError:
-
-            try:
-                channel_energies = [self.data_dict["Energy_Bin_Str"][key] for key in selected_channels]
-            
-            except KeyError:
-                channel_energies = [get_solo_channel_bin(self, channel_str) for channel_str in selected_channels]
-
+        channel_energy_strs = self.get_channel_energy_values("str")
+        if selection is not None:
+            channel_energy_strs = channel_energy_strs[slice(selection[0], selection[1])]
 
         # creation of the figure
-        fig, ax = plt.subplots(figsize=(17,7))
+        fig, ax = plt.subplots(figsize=(9,6))
 
         # settings of title
-        if direction is not None:
-            ax.set_title(f"{spacecraft} {instrument} {direction}, {species}")
-        else:
-            ax.set_title(f"{spacecraft} {instrument}, {species}")
+        ax.set_title(f"{sc_identifier} {instrument.upper()}, {s_identifier}")
 
         ax.grid(True)
 
         # settings for y and x axes
         ax.set_yscale("log")
-        ax.set_ylabel(intensity_unit)
+        ax.set_ylabel(r"Intensity" + "\n" + r"[1/(cm$^{2}$ sr s MeV)$^{-1}$]")
 
-        ax.set_xlabel(r"$t_{0} = t - \frac{L}{v}$")
-        ax.set_xlim(self.data.index[0], self.data.index[-1])
+        ax.set_xlabel(r"$t_{0} = t - L/v$")
         ax.xaxis_date()
         ax.xaxis.set_major_formatter(DateFormatter('%H:%M\n%Y-%m-%d'))
 
+        if xlim is None:
+            ax.set_xlim(dataframe.index[0], dataframe.index[-1])
+        else:
+            try:
+                ax.set_xlim(xlim[0], xlim[1])
+            except ValueError:
+                ax.set_xlim(pd.to_datetime(xlim[0]), pd.to_datetime(xlim[1]))
+
         # cosmetic settings
         plt.rcParams['axes.linewidth'] = 1.5
-        plt.rcParams['font.size'] = 14
-
+        plt.rcParams['font.size'] = 12
 
         # housekeeping lists
         series_natural = []
@@ -1340,7 +1370,7 @@ class Event:
             series_norm.append(series_normalized)
 
             # save the plotted lines, NOTICE that they come inside a list of len==1
-            p1 = ax.step(series.index, series.values, c=f"C{i}", visible=True, label=channel_energies[i])
+            p1 = ax.step(series.index, series.values, c=f"C{i}", visible=True, label=channel_energy_strs[i])
             p2 = ax.step(series_normalized.index, series_normalized.values, c=f"C{i}", visible=False) # normalized lines are initially hidden
 
             # store plotted line objects for later referencing
@@ -1355,13 +1385,18 @@ class Event:
                                     max = max_slider_val,
                                     step = stepsize,
                                     continuous_update = True,
-                                    description = "Path length L: "
+                                    description = "Path length L [AU]: "
                                     )
 
         button = widgets.Checkbox(value = False,
                                 description = "Normalize",
                                 indent=True
                                 )
+
+        # A box for the path length
+        path_label = AnchoredText(f"L = {slider.value} AU", prop=dict(size=13), frameon=True, loc=(4))
+        ax.add_artist(path_label)
+
 
         # timeshift connects the slider to the shifting of the plotted curves
         def timeshift(sliderobject):
@@ -1385,6 +1420,9 @@ class Event:
                 # Update the time value
                 line.set_xdata(line.get_xdata() - pd.Timedelta(seconds=timedelta_sec))
 
+            # Update the path label artist
+            path_label.set_label(f"L = {slider.value} AU")
+
             # Effectively this refreshes the figure
             fig.canvas.draw_idle()
 
@@ -1398,6 +1436,12 @@ class Event:
 
             for line in plotted_norm:
                 line.set_visible(not line.get_visible())
+            
+            # Reset the y-axis label
+            if plotted_natural[0].get_visible():
+                ax.set_ylabel(r"Intensity" + "\n" + r"[1/(cm$^{2}$ sr s MeV)$^{-1}$]")
+            else:
+                ax.set_ylabel("Intensity normalized")
 
             # Effectively this refreshes the figure
             fig.canvas.draw_idle()
@@ -1411,12 +1455,18 @@ class Event:
         display(button)
 
 
-    def get_channel_energy_values(self):
+    def get_channel_energy_values(self, returns="num"):
         """
-        A class method to return the energies of each energy channel in a numerical form.
+        A class method to return the energies of each energy channel in either str or numerical form.
         
+        Parameters:
+        -----------
+        returns: str, either 'str' or 'num'
+
         Returns: 
         ---------
+        energy_ranges : list of energy ranges as strings 
+        or
         lower_bounds : list of lower bounds of each energy channel in eVs
         higher_bounds : list of higher bounds of each energy channel in eVs
         """
@@ -1465,6 +1515,10 @@ class Event:
 
             energy_ranges = self.current_energies["channels_dict_df_p"]["ch_strings"].values
 
+        # Check what to return before running calculations
+        if returns == "str":
+            return energy_ranges
+
         lower_bounds, higher_bounds = [], []
         for energy_str in energy_ranges:
 
@@ -1499,6 +1553,35 @@ class Event:
 
         return lower_bounds, higher_bounds
 
+
+    def calculate_particle_speeds(self):
+        """
+        Calculates average particle speeds by input channel energy boundaries.
+        """
+
+        if self.species in ["electron", 'e']:
+            m_species = const.m_e.value
+        if self.species in ['p', "ion", 'H']:
+            m_species = const.m_p.value
+
+        C_SQUARE = const.c.value*const.c.value
+
+        # E=mc^2, a fundamental property of any object with mass
+        mass_energy = m_species*C_SQUARE # e.g. 511 keV/c for electrons
+
+        # Get the energies of each energy channel, to calculate the mean energy of particles and ultimately
+        # To get the dimensionless speeds of the particles (beta)
+        e_lows, e_highs = self.get_channel_energy_values() #get_energy_channels() returns energy in eVs
+
+        mean_energies = np.sqrt(np.multiply(e_lows,e_highs))
+
+        # E_Joule = [((En*u.eV).to(u.J)).value + mass_energy for En in E] #total energy, including mass
+        e_Joule = [((En*u.eV).to(u.J)).value for En in mean_energies] #only kinetic energy
+
+        # Beta, the unitless speed (v/c)
+        beta = [np.sqrt(1-(( e_J/mass_energy + 1)**(-2))) for e_J in e_Joule]
+
+        return np.array(beta)*const.c.value
 
 
 def flux2series(flux, dates, cadence=None):
