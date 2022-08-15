@@ -1205,7 +1205,7 @@ class Event:
         cb.set_label(clabel)
 
         # x-axis settings
-        ax.set_xlabel("Time [HH:MM \ndd-mm]")
+        ax.set_xlabel("Time [HH:MM \nm-d]")
         ax.xaxis_date()
         ax.set_xlim(t_start, t_end)
         #ax.xaxis.set_major_locator(mdates.HourLocator(interval = 1))
@@ -1233,6 +1233,7 @@ class Event:
             plt.savefig(f'plots/{spacecraft}_{instrument}_{date_of_event}_dynamic_spectra.png', transparent=False, 
                     facecolor='white', bbox_inches='tight')
 
+        self.fig = fig
         plt.show()
 
 
@@ -1338,7 +1339,7 @@ class Event:
 
         ax.set_xlabel(r"$t_{0} = t - L/v$")
         ax.xaxis_date()
-        ax.xaxis.set_major_formatter(DateFormatter('%H:%M\n%Y-%m-%d'))
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M\n%m-%d'))
 
         if xlim is None:
             ax.set_xlim(dataframe.index[0], dataframe.index[-1])
