@@ -1380,12 +1380,14 @@ class Event:
         plt.legend(loc='upper center', bbox_to_anchor=(1.0, 1.1), fancybox=True, shadow=False, ncol=1, fontsize = 9)
 
         # widget objects, slider and button
+        style = {'description_width': 'initial'}
         slider = widgets.FloatSlider(value = min_slider_val,
                                     min = min_slider_val,
                                     max = max_slider_val,
                                     step = stepsize,
                                     continuous_update = True,
-                                    description = "Path length L [AU]: "
+                                    description = "Path length L [AU]: ",
+                                    style=style
                                     )
 
         button = widgets.Checkbox(value = False,
@@ -1394,8 +1396,11 @@ class Event:
                                 )
 
         # A box for the path length
-        path_label = AnchoredText(f"L = {slider.value} AU", prop=dict(size=13), frameon=True, loc=(4))
-        ax.add_artist(path_label)
+        path_label = f"L = {slider.value} AU"
+        text = plt.text(0.85,0.03, path_label, transform=ax.transAxes, bbox=dict(boxstyle="square",
+                                                                 ec=(0., 0., 0.),
+                                                                 fc=(1., 1.0, 1.0),
+                                                                 ))
 
 
         # timeshift connects the slider to the shifting of the plotted curves
@@ -1421,7 +1426,7 @@ class Event:
                 line.set_xdata(line.get_xdata() - pd.Timedelta(seconds=timedelta_sec))
 
             # Update the path label artist
-            path_label.set_label(f"L = {slider.value} AU")
+            text.set_text(f"L = {slider.value} AU")
 
             # Effectively this refreshes the figure
             fig.canvas.draw_idle()
@@ -1575,8 +1580,8 @@ class Event:
 
         mean_energies = np.sqrt(np.multiply(e_lows,e_highs))
 
-        # E_Joule = [((En*u.eV).to(u.J)).value + mass_energy for En in E] #total energy, including mass
-        e_Joule = [((En*u.eV).to(u.J)).value for En in mean_energies] #only kinetic energy
+        # Transform kinetic energy from electron volts to joules
+        e_Joule = [((En*u.eV).to(u.J)).value for En in mean_energies]
 
         # Beta, the unitless speed (v/c)
         beta = [np.sqrt(1-(( e_J/mass_energy + 1)**(-2))) for e_J in e_Joule]
