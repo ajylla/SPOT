@@ -159,6 +159,15 @@ class Event:
                                      pos_timestamp='center')
                 return df, meta
 
+            if(self.sensor == 'ephin'):
+                df, meta = soho_load(dataset="SOHO_COSTEP-EPHIN_L2-1MIN",
+                                     startdate=self.start_date,
+                                     enddate=self.end_date,
+                                     path=self.data_path,
+                                     resample=None,
+                                     pos_timestamp='center')
+                return df, meta
+
         if(self.spacecraft.lower() == 'wind'):
             if(self.sensor == '3dp'):
                 df_i, meta_i = wind3dp_load(dataset="WI_SOPD_3DP",
@@ -257,12 +266,19 @@ class Event:
         if(self.spacecraft.lower() == 'soho'):
 
             if(self.sensor.lower() == 'erne'):
-
                 self.df, self.meta =\
                     self.load_data(self.spacecraft, self.sensor, 'None',
                                    self.data_level)
                 self.current_df_i = self.df.filter(like='PH_')
                 # self.current_df_e = self.df.filter(like='Electron')
+                self.current_energies = self.meta
+
+            if(self.sensor.lower() == 'ephin'):
+                self.df, self.meta =\
+                    self.load_data(self.spacecraft, self.sensor, 'None',
+                                   self.data_level)
+                # self.current_df_i = self.df.filter(like='PH_')
+                self.current_df_e = self.df.filter(like='E')
                 self.current_energies = self.meta
 
         if(self.spacecraft.lower() == 'wind'):
@@ -912,6 +928,8 @@ class Event:
             self.viewing_used = ''
         elif (self.spacecraft.lower() == 'soho' and self.sensor == 'erne'):
             self.viewing_used = ''
+        elif (self.spacecraft.lower() == 'soho' and self.sensor == 'ephin'):
+            self.viewing_used = ''
 
         self.averaging_used = resample_period
         self.x_sigma = x_sigma
@@ -989,15 +1007,24 @@ class Event:
         if(self.spacecraft == 'soho'):
 
             if(self.sensor == 'erne'):
-
                 if(self.species in ['p', 'i']):
-
                     df_flux, en_channel_string =\
                         calc_av_en_flux_ERNE(self.current_df_i,
                                              self.current_energies['channels_dict_df_p'],
                                              channels,
                                              species='p',
                                              sensor='HET')
+
+            if(self.sensor == 'ephin'):
+                # convert single-element "channels" list to integer
+                if type(channels) == list:
+                    if len(channels) == 1:
+                        channels = channels[0]
+                    else:
+                        print("No multi-channel support for SOHO/EPHIN included yet! Select only one single channel.")
+                if(self.species == 'e'):
+                    df_flux = self.current_df_e[f'E{channels}']
+                    en_channel_string = self.current_energies[f'E{channels}']
 
         if(self.spacecraft == 'wind'):
             if(self.sensor == '3dp'):
@@ -1128,8 +1155,12 @@ class Event:
                 s_identifier = "protons"
 
         if self.spacecraft == "soho":
-            particle_data = self.current_df_i
-            s_identifier = "protons"
+            if instrument.lower() == "erne":
+                particle_data = self.current_df_i
+                s_identifier = "protons"
+            if instrument.lower() == "ephin":
+                particle_data = self.current_df_e
+                s_identifier = "electrons"
 
 
         # Resample only if requested
@@ -1295,8 +1326,12 @@ class Event:
             sc_identifier = "STEREO-A" if spacecraft[-1] == "a" else "STEREO-B"
 
         if self.spacecraft == "soho":
-            particle_data = self.current_df_i
-            s_identifier = "protons"
+            if instrument.lower() == "erne":
+                particle_data = self.current_df_i
+                s_identifier = "protons"
+            if instrument.lower() == "ephin":
+                particle_data = self.current_df_e
+                s_identifier = "electrons"
             sc_identifier = "SOHO"
 
         # make a copy to make sure original data is not altered
@@ -1518,8 +1553,10 @@ class Event:
                 energy_ranges = [element[0] for element in energy_ranges]
 
         if self.spacecraft == "soho":
-
-            energy_ranges = self.current_energies["channels_dict_df_p"]["ch_strings"].values
+            if self.sensor.lower() == "erne":
+                energy_ranges = self.current_energies["channels_dict_df_p"]["ch_strings"].values
+            if self.sensor.lower() == "ephin":
+                energy_ranges = self.current_energies.values
 
         # Check what to return before running calculations
         if returns == "str":
