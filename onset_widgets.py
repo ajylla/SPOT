@@ -33,12 +33,12 @@ view_dict = {
 
 species_dict = {
     ("STEREO-A", "LET") : ['protons', 'electrons'],
-    ("STEREO-A", "SEPT") : ['protons', 'electrons'],
+    ("STEREO-A", "SEPT") : ['ions', 'electrons'],
     ("STEREO-A", "HET") : ['protons', 'electrons'],
     ("STEREO-B", "LET") : ['protons', 'electrons'],
-    ("STEREO-B", "SEPT") : ['protons', 'electrons'],
+    ("STEREO-B", "SEPT") : ['ions', 'electrons'],
     ("STEREO-B", "HET") : ['protons', 'electrons'],
-    ("Solar Orbiter", "EPT") : ['protons', 'electrons'],
+    ("Solar Orbiter", "EPT") : ['ions', 'electrons'],
     ("Solar Orbiter", "HET") : ['protons', 'electrons'],
     ("Bepicolombo", "SIXS-P") : ['protons', 'electrons'],
     ("SOHO", "ERNE-HED") : ['protons'],

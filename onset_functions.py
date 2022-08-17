@@ -37,7 +37,7 @@ class Event:
         if sensor in ["ERNE-HED"]:
             sensor = "ERNE"
 
-        if species == "protons":
+        if species in ("protons", "ions"):
             species = 'p'
         if species == "electrons":
             species = 'e'
@@ -1076,7 +1076,7 @@ class Event:
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
 
 
-    def dynamic_spectrum(self, view, cmap='magma', xlim=None, resample=None, save=False):
+    def dynamic_spectrum(self, view, cmap: str = 'magma', xlim: tuple = None, resample: str = None, save: bool = False) -> None:
         """
         Shows all the different energy channels in a single 2D plot, and color codes the corresponding intensity*energy^2 by a colormap.
 
@@ -1123,14 +1123,24 @@ class Event:
             else:
                 if instrument == "sept":
                     particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
+                    s_identifier = "ions"
                 else:
                     particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if "Flux" in ch]]
-                s_identifier = "protons"
+                    s_identifier = "protons"
 
         if self.spacecraft == "soho":
             particle_data = self.current_df_i
             s_identifier = "protons"
 
+        # These instruments will have keVs on their y-axis
+        LOW_ENERGY_SENSORS = ("sept", "ept")
+
+        if instrument in LOW_ENERGY_SENSORS:
+            y_multiplier = 1e-3 # keV
+            y_unit = "keV"
+        else:
+            y_multiplier = 1e-6 # MeV
+            y_unit = "MeV"
 
         # Resample only if requested
         if resample is not None:
@@ -1157,7 +1167,7 @@ class Event:
         mean_energies = np.sqrt(np.multiply(e_lows,e_highs))
 
         # Energy boundaries of plotted bins in keVs are the y-axis:
-        y_arr = np.append(e_lows,e_highs[-1]) * 1e-3
+        y_arr = np.append(e_lows,e_highs[-1]) * y_multiplier
 
         # Set image pixel length and height
         image_len = len(time)
@@ -1223,7 +1233,7 @@ class Event:
         ax.yaxis.set_tick_params(length=0, width=0, which='minor', labelsize=0.)
         ax.yaxis.set_tick_params(length=9., width=1.5, which='major')
 
-        ax.set_ylabel("Energy [keV]")
+        ax.set_ylabel(f"Energy [{y_unit}]")
 
         # Title
         plt.title(f"{spacecraft.upper()} {instrument.upper()} {s_identifier}, {date_of_event}")
@@ -1243,16 +1253,14 @@ class Event:
 
         Parameters:
         ----------
-        view : str or None
-
+        view : str or None 
+                    Viewing direction for the chosen sensor
         selection : 2-tuple
                     The indices of the channels one wishes to plot. End-exclusive.
         xlim : 2-tuple
                     The start and end point of the plot as pandas-compatible datetimes or strings
         resample : str
                     Pandas-compatible resampling time-string, e.g. "2min" or "50s"
-        guess : float, int
-                    Initial guess for the path length in AU, default = 1.2
         """
 
         import ipywidgets as widgets
@@ -1461,7 +1469,7 @@ class Event:
         display(button)
 
 
-    def get_channel_energy_values(self, returns="num"):
+    def get_channel_energy_values(self, returns: str = "num") -> list:
         """
         A class method to return the energies of each energy channel in either str or numerical form.
         
