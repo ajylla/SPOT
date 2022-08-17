@@ -13,7 +13,7 @@ list_of_sc = ["STEREO-A", "STEREO-B", "Solar Orbiter", "SOHO"]
 stereo_instr = ["SEPT", "HET"] #["LET", "SEPT", "HET"]
 solo_instr = ["EPT", "HET"]
 bepi_instr = ["SIXS-P"]
-soho_instr = ["ERNE-HED"]
+soho_instr = ["ERNE-HED", "EPHIN"]
 
 sensor_dict = {
     "STEREO-A" : stereo_instr,
@@ -42,6 +42,7 @@ species_dict = {
     ("Solar Orbiter", "HET") : ['protons', 'electrons'],
     ("Bepicolombo", "SIXS-P") : ['protons', 'electrons'],
     ("SOHO", "ERNE-HED") : ['protons'],
+    ("SOHO", "EPHIN") : ['electrons'],
 }
 
 spacecraft_drop = widgets.Dropdown(
