@@ -144,4 +144,3 @@ sensor_drop.observe(update_view_options)
 # does the same but for sensor menu
 spacecraft_drop.observe(update_species_options)
 sensor_drop.observe(update_species_options)
-
