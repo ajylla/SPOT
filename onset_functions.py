@@ -207,6 +207,15 @@ class Event:
                                           epilo_threshold=self.threshold)
                 return df, meta
 
+        if(self.spacecraft.lower() == 'bepi'):
+            df, meta = bepi_sixs_load(startdate=self.start_date,
+                                      enddate=self.end_date,
+                                      side=viewing,
+                                      path=self.data_path)
+            df_i = df[[f"P{i}" for i in range(1, 10)]]
+            df_e = df[[f"E{i}" for i in range(1, 8)]]
+            return df_i, df_e, meta
+
     def load_all_viewing(self):
 
         if(self.spacecraft == 'solo'):
@@ -308,6 +317,19 @@ class Event:
                 # self.df_i = self.df.filter(like='H_Flux_')
                 # self.current_i_energies = self.meta
 
+        if(self.spacecraft.lower() == 'bepi'):
+            self.df_i_0, self.df_e_0, self.energies_0 =\
+                self.load_data(self.spacecraft, self.sensor, viewing='0', data_level='None')
+            self.df_i_1, self.df_e_1, self.energies_1 =\
+                self.load_data(self.spacecraft, self.sensor, viewing='1', data_level='None')
+            self.df_i_2, self.df_e_2, self.energies_2 =\
+                self.load_data(self.spacecraft, self.sensor, viewing='2', data_level='None')
+            # side 3 and 4 should not be used for SIXS, but they can be activated by uncommenting the following lines
+            # self.df_i_3, self.df_e_3, self.energies_3 =\
+            #     self.load_data(self.spacecraft, self.sensor, viewing='3', data_level='None')
+            # self.df_i_4, self.df_e_4, self.energies_4 =\
+            #     self.load_data(self.spacecraft, self.sensor, viewing='4', data_level='None')
+
     def choose_data(self, viewing):
 
         if(self.spacecraft == 'solo'):
@@ -382,6 +404,29 @@ class Event:
                 self.current_df_e = self.df_e[self.df_e.columns[self.df_e.columns.str.endswith(viewing)]]
                 # protons not yet included in PSP/ISOIS-EPILO dataset
                 # self.current_df_i = self.df_i[self.df_i.columns[self.df_i.columns.str.endswith(viewing)]]
+
+        if(self.spacecraft.lower() == 'bepi'):
+            if(viewing == '0'):
+                self.current_df_i = self.df_i_0
+                self.current_df_e = self.df_e_0
+                self.current_energies = self.energies_0
+            elif(viewing == '1'):
+                self.current_df_i = self.df_i_1
+                self.current_df_e = self.df_e_1
+                self.current_energies = self.energies_1
+            elif(viewing == '2'):
+                self.current_df_i = self.df_i_2
+                self.current_df_e = self.df_e_2
+                self.current_energies = self.energies_2
+            # side 3 and 4 should not be used for SIXS, but they can be activated by uncommenting the following lines
+            # elif(viewing == '3'):
+            #     self.current_df_i = self.df_i_3
+            #     self.current_df_e = self.df_e_3
+            #     self.current_energies = self.energies_3
+            # elif(viewing == '4'):
+            #     self.current_df_i = self.df_i_4
+            #     self.current_df_e = self.df_e_4
+            #     self.current_energies = self.energies_4
 
     def calc_av_en_flux_HET(self, df, energies, en_channel):
 
@@ -713,6 +758,8 @@ class Event:
             flux_series = df_flux  # [channel]
         if(self.spacecraft.lower() == 'psp'):
             flux_series = df_flux[channel]
+        if(self.spacecraft.lower() == 'bepi'):
+            flux_series = df_flux  # [channel]
         date = flux_series.index
 
         if ylim is None:
@@ -760,6 +807,9 @@ class Event:
         if(self.spacecraft == 'psp'):
             # df_flux_peak = df_flux[df_flux == df_flux.max()]
             df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
+        if(self.spacecraft == 'bepi'):
+            df_flux_peak = df_flux[df_flux == df_flux.max()]
+            # df_flux_peak = df_flux[df_flux[channel] == df_flux[channel].max()]
         self.print_info("Flux peak", df_flux_peak)
         self.print_info("Onset time", onset_stats[-1])
         self.print_info("Mean of background intensity",
@@ -923,7 +973,8 @@ class Event:
                 or (self.spacecraft.lower() == 'psp' and self.sensor.startswith('isois')) \
                 or (self.spacecraft.lower() == 'solo' and self.sensor == 'ept') \
                 or (self.spacecraft.lower() == 'solo' and self.sensor == 'het') \
-                or (self.spacecraft.lower() == 'wind' and self.sensor == '3dp'):
+                or (self.spacecraft.lower() == 'wind' and self.sensor == '3dp') \
+                or (self.spacecraft.lower() == 'bepi'):
             self.viewing_used = viewing
             self.choose_data(viewing)
         elif (self.spacecraft[:2].lower() == 'st' and self.sensor == 'het'):
@@ -1050,6 +1101,20 @@ class Event:
                     # change flux units from '#/cm2-ster-eV-sec' to '#/cm2-ster-MeV-sec'
                     df_flux = df_flux*1e6
                     en_channel_string = self.current_e_energies['channels_dict_df']['Bins_Text'][f'ENERGY_{channels}']
+
+        if(self.spacecraft.lower() == 'bepi'):
+            # convert single-element "channels" list to integer
+            if type(channels) == list:
+                if len(channels) == 1:
+                    channels = channels[0]
+                else:
+                    print("No multi-channel support for Bepi/SIXS included yet! Select only one single channel.")
+            if(self.species == 'e'):
+                df_flux = self.current_df_e[f'E{channels}']
+                en_channel_string = self.current_energies['Energy_Bin_str'][f'E{channels}']
+            if(self.species in ['p', 'i']):
+                df_flux = self.current_df_i[f'P{channels}']
+                en_channel_string = self.current_energies['Energy_Bin_str'][f'P{channels}']
 
         if(self.spacecraft.lower() == 'psp'):
             if(self.sensor.lower() == 'isois-epihi'):
@@ -1288,7 +1353,7 @@ class Event:
         # inits
         spacecraft = self.spacecraft
         instrument = self.sensor
-        species =  self.species
+        species = self.species
 
         METERS_PER_AU = 1 * u.AU.to(u.m)
 
@@ -1649,3 +1714,55 @@ def flux2series(flux, dates, cadence=None):
             raise Warning(f"Your 'resample' option of [{cadence}] doesn't seem to be a proper Pandas frequency!")
 
     return flux_series
+
+
+def bepicolombo_sixs_stack(path, date, side):
+    # def bepicolombo_sixs_stack(path, date, side, species):
+
+    # side is the index of the file here
+    try:
+        try:
+            filename = f"{path}/sixs_phys_data_{date}_side{side}.csv"
+            df = pd.read_csv(filename)
+        except FileNotFoundError:
+            # try alternative file name format
+            filename = f"{path}/{date.strftime('%Y%m%d')}_side{side}.csv"
+            df = pd.read_csv(filename)
+            times = pd.to_datetime(df['TimeUTC'])
+
+        # list comprehension because the method can't be applied onto the array "times"
+        times = [t.tz_convert(None) for t in times]
+        df.index = np.array(times)
+        df = df.drop(columns=['TimeUTC'])
+
+        # choose the subset of desired particle species
+        # if species=="ion":
+        #     df = df[[f"P{i}" for i in range(1,10)]]
+        # if species=="ele":
+        #     df = df[[f"E{i}" for i in range(1,8)]]
+
+    except FileNotFoundError:
+        print(f'Unable to open {filename}')
+        df = pd.DataFrame()
+        filename = ''
+
+    return df, filename
+
+
+def bepi_sixs_load(startdate, enddate, side, path):
+    dates = pd.date_range(startdate, enddate)
+
+    # read files into Pandas dataframes:
+    df, file = bepicolombo_sixs_stack(path, startdate, side=side)
+    if len(dates) > 1:
+        for date in dates[1:]:
+            t_df, file = bepicolombo_sixs_stack(path, date.date(), side=side)
+            df = pd.concat([df, t_df])
+
+    channels_dict = {"Energy_Bin_str": {'E1': '71 keV', 'E2': '106 keV', 'E3': '169 keV', 'E4': '280 keV', 'E5': '960 keV', 'E6': '2240 keV', 'E7': '8170 keV',
+                                        'P1': '1.1 MeV', 'P2': '1.2 MeV', 'P3': '1.5 MeV', 'P4': '2.3 MeV', 'P5': '4.0 MeV', 'P6': '8.0 MeV', 'P7': '15.0 MeV', 'P8': '25.1 MeV', 'P9': '37.3 MeV'},
+                     "Electron_Bins_Low_Energy": np.array([55, 78, 134, 235, 1000, 1432, 4904]),
+                     "Electron_Bins_High_Energy": np.array([92, 143, 214, 331, 1193, 3165, 10000]),
+                     "Ion_Bins_Low_Energy": np.array([0.001, 1.088, 1.407, 2.139, 3.647, 7.533, 13.211, 22.606, 29.246]),
+                     "Ion_Bins_High_Energy": np.array([1.254, 1.311, 1.608, 2.388, 4.241, 8.534, 15.515, 28.413, 40.0])}
+    return df, channels_dict
