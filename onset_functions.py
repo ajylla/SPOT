@@ -1,6 +1,7 @@
 
 import os
 import datetime
+from turtle import position
 # from turtle import speed
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -9,6 +10,7 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 import astropy.constants as const
+from sunpy.coordinates import get_horizons_coord
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.offsetbox import AnchoredText
@@ -38,7 +40,7 @@ class Event:
         if sensor in ["ERNE-HED"]:
             sensor = "ERNE"
 
-        if species == "protons":
+        if species in ("protons", "ions"):
             species = 'p'
         if species == "electrons":
             species = 'e'
@@ -51,6 +53,7 @@ class Event:
         self.data_level = data_level.lower()
         self.data_path = data_path + os.sep
         self.threshold = threshold
+        self.viewing = None
 
         # placeholding class attributes for onset_analysis()
         self.flux_series = None
@@ -97,6 +100,9 @@ class Event:
                        "bg_mean": self.bg_mean
                        }
 
+    def update_viewing(self, viewing):
+        self.viewing = viewing
+
     def load_data(self, spacecraft, sensor, viewing, data_level,
                   autodownload=True, threshold=None):
 
@@ -109,6 +115,7 @@ class Event:
                                           path=self.data_path,
                                           autodownload=autodownload)
 
+            self.update_viewing(viewing)
             return df_i, df_e, energs
 
         if(self.spacecraft[:2].lower() == 'st'):
@@ -124,6 +131,8 @@ class Event:
                                                            resample=None,
                                                            path=self.data_path)
                     df_e, channels_dict_df_e = [], []
+
+                    self.update_viewing(viewing)
                     return df_i, df_e, channels_dict_df_i, channels_dict_df_e
 
                 if self.species == "e":
@@ -138,6 +147,8 @@ class Event:
                                                            path=self.data_path)
 
                     df_i, channels_dict_df_i = [], []
+
+                    self.update_viewing(viewing)
                     return df_i, df_e, channels_dict_df_i, channels_dict_df_e
 
             if(self.sensor == 'het'):
@@ -148,6 +159,8 @@ class Event:
                                        resample=None,
                                        pos_timestamp='center',
                                        path=self.data_path)
+
+                self.update_viewing(viewing)
                 return df, meta
 
         if(self.spacecraft.lower() == 'soho'):
@@ -158,6 +171,8 @@ class Event:
                                      path=self.data_path,
                                      resample=None,
                                      pos_timestamp='center')
+
+                self.update_viewing(viewing)
                 return df, meta
 
             if(self.sensor == 'ephin'):
@@ -167,6 +182,8 @@ class Event:
                                      path=self.data_path,
                                      resample=None,
                                      pos_timestamp='center')
+
+                self.update_viewing(viewing)
                 return df, meta
 
         if(self.spacecraft.lower() == 'wind'):
@@ -187,6 +204,7 @@ class Event:
                                             path=self.data_path,
                                             threshold=self.threshold)
 
+                self.update_viewing(viewing)
                 return df_i, df_e, meta_i, meta_e
 
         if(self.spacecraft.lower() == 'psp'):
@@ -196,6 +214,8 @@ class Event:
                                           enddate=self.end_date,
                                           path=self.data_path,
                                           resample=None)
+
+                self.update_viewing(viewing)
                 return df, meta
             if(self.sensor.lower() == 'isois-epilo'):
                 df, meta = psp_isois_load(dataset='PSP_ISOIS-EPILO_L2-PE',
@@ -205,6 +225,8 @@ class Event:
                                           resample=None,
                                           epilo_channel='F',
                                           epilo_threshold=self.threshold)
+
+                self.update_viewing(viewing)
                 return df, meta
 
     def load_all_viewing(self):
@@ -267,6 +289,7 @@ class Event:
         if(self.spacecraft.lower() == 'soho'):
 
             if(self.sensor.lower() == 'erne'):
+
                 self.df, self.meta =\
                     self.load_data(self.spacecraft, self.sensor, 'None',
                                    self.data_level)
@@ -309,6 +332,8 @@ class Event:
                 # self.current_i_energies = self.meta
 
     def choose_data(self, viewing):
+
+        self.update_viewing(viewing)
 
         if(self.spacecraft == 'solo'):
             if(viewing == 'sun'):
@@ -698,9 +723,9 @@ class Event:
 
         color_dict = {
             'onset_time': '#e41a1c',
-            'bg_mean': '#e41a1c',
-            'flux_peak': '#1a1682',
-            'bg': '#de8585'
+            'bg_mean':    '#e41a1c',
+            'flux_peak':  '#1a1682',
+            'bg':         '#de8585'
         }
 
         if(self.spacecraft == 'solo'):
@@ -849,8 +874,7 @@ class Event:
 
         self.print_info("Particle species", s_identifier)
 
-        # if(self.viewing_used != '' and self.viewing_used != None):
-        if(self.viewing_used != '' and self.viewing_used is not None):
+        if(self.viewing_used != '' and self.viewing_used != None):
 
             plt.title(f"{spacecraft}/{sensor} {channels_dict} {s_identifier}\n"
                       f"{self.averaging_used} averaging, viewing: "
@@ -1009,7 +1033,9 @@ class Event:
         if(self.spacecraft == 'soho'):
 
             if(self.sensor == 'erne'):
+
                 if(self.species in ['p', 'i']):
+
                     df_flux, en_channel_string =\
                         calc_av_en_flux_ERNE(self.current_df_i,
                                              self.current_energies['channels_dict_df_p'],
@@ -1104,7 +1130,8 @@ class Event:
 
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
 
-    def dynamic_spectrum(self, view, cmap='magma', xlim=None, resample=None, save=False):
+
+    def dynamic_spectrum(self, view, cmap: str = 'magma', xlim: tuple = None, resample: str = None, save: bool = False) -> None:
         """
         Shows all the different energy channels in a single 2D plot, and color codes the corresponding intensity*energy^2 by a colormap.
 
@@ -1151,6 +1178,7 @@ class Event:
             else:
                 if instrument == "sept":
                     particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if ch[:2] == "ch"]]
+                    s_identifier = "ions"
                 else:
                     particle_data = self.current_df_i[[ch for ch in self.current_df_i.columns if "Flux" in ch]]
                 s_identifier = "protons"
@@ -1163,6 +1191,16 @@ class Event:
                 particle_data = self.current_df_e
                 s_identifier = "electrons"
 
+        # These instruments will have keVs on their y-axis
+        LOW_ENERGY_SENSORS = ("sept", "ept")
+
+        if instrument in LOW_ENERGY_SENSORS:
+            y_multiplier = 1e-3 # keV
+            y_unit = "keV"
+        else:
+            y_multiplier = 1e-6 # MeV
+            y_unit = "MeV"
+
         # Resample only if requested
         if resample is not None:
             particle_data = particle_data.resample(resample).mean()
@@ -1173,6 +1211,7 @@ class Event:
         else:
             t_start, t_end = pd.to_datetime(xlim[0]), pd.to_datetime(xlim[1])
             df = particle_data.loc[(particle_data.index >= t_start) & (particle_data.index < t_end)]
+
 
         # In practice this seeks the date on which the highest flux is observed
         date_of_event = df.iloc[np.argmax(df[df.columns[0]])].name.date()
@@ -1187,7 +1226,7 @@ class Event:
         mean_energies = np.sqrt(np.multiply(e_lows, e_highs))
 
         # Energy boundaries of plotted bins in keVs are the y-axis:
-        y_arr = np.append(e_lows, e_highs[-1]) * 1e-3
+        y_arr = np.append(e_lows,e_highs[-1]) * y_multiplier
 
         # Set image pixel length and height
         image_len = len(time)
@@ -1202,10 +1241,11 @@ class Event:
         # Assign grid bins -> intensity * energy^2
         for i, channel in enumerate(df):
 
-            grid[:, i] = df[channel]*(mean_energies[i]*mean_energies[i]*energy_multiplier_squared)  # Intensity*Energy^2, and energy is in eV -> tranform to keV or MeV
+            grid[:,i] = df[channel]*(mean_energies[i]*mean_energies[i]*energy_multiplier_squared) # Intensity*Energy^2, and energy is in eV -> tranform to keV or MeV
+
 
         # Finally cut the last entry and transpose the grid so that it can be plotted correctly
-        grid = grid[:-1, :]
+        grid = grid[:-1,:]
         grid = grid.T
 
         # ---only plotting_commands from this point----->
@@ -1218,7 +1258,7 @@ class Event:
         normscale = cl.LogNorm()
 
         # Init the figure and axes
-        figsize=[27, 12]
+        figsize=[27,14]
         fig, ax = plt.subplots(figsize=figsize)
 
         maskedgrid = np.where(grid==0, 0, 1)
@@ -1237,10 +1277,10 @@ class Event:
         ax.set_xlabel("Time [HH:MM \nm-d]")
         ax.xaxis_date()
         ax.set_xlim(t_start, t_end)
-        # ax.xaxis.set_major_locator(mdates.HourLocator(interval = 1))
+        #ax.xaxis.set_major_locator(mdates.HourLocator(interval = 1))
         utc_dt_format1 = DateFormatter('%H:%M \n%m-%d')
         ax.xaxis.set_major_formatter(utc_dt_format1)
-        # ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 5))
+        #ax.xaxis.set_minor_locator(mdates.MinuteLocator(interval = 5))
 
         # y-axis settings
         ax.set_yscale('log')
@@ -1252,35 +1292,34 @@ class Event:
         ax.yaxis.set_tick_params(length=0, width=0, which='minor', labelsize=0.)
         ax.yaxis.set_tick_params(length=9., width=1.5, which='major')
 
-        ax.set_ylabel("Energy [keV]")
+        ax.set_ylabel(f"Energy [{y_unit}]")
 
         # Title
         plt.title(f"{spacecraft.upper()} {instrument.upper()} {s_identifier}, {date_of_event}")
 
         # saving of the figure
         if save:
-            plt.savefig(f'plots/{spacecraft}_{instrument}_{date_of_event}_dynamic_spectra.png', transparent=False,
-                        facecolor='white', bbox_inches='tight')
+            plt.savefig(f'plots/{spacecraft}_{instrument}_{date_of_event}_dynamic_spectra.png', transparent=False, 
+                    facecolor='white', bbox_inches='tight')
 
         self.fig = fig
         plt.show()
 
-    def tsa_plot(self, view, selection=None, xlim=None, resample=None):
+
+    def tsa_plot(self, view, selection = None, xlim = None, resample = None):
         """
         Makes an interactive time-shift plot
 
         Parameters:
         ----------
-        view : str or None
-
+        view : str or None 
+                    Viewing direction for the chosen sensor
         selection : 2-tuple
                     The indices of the channels one wishes to plot. End-exclusive.
         xlim : 2-tuple
                     The start and end point of the plot as pandas-compatible datetimes or strings
         resample : str
                     Pandas-compatible resampling time-string, e.g. "2min" or "50s"
-        guess : float, int
-                    Initial guess for the path length in AU, default = 1.2
         """
 
         import ipywidgets as widgets
@@ -1289,6 +1328,23 @@ class Event:
         spacecraft = self.spacecraft
         instrument = self.sensor
         species =  self.species
+
+
+        # This here is an extremely stupid thing, but we must convert spacecraft input name back
+        # to its original version so that sunpy.get_horizon_coords() understands it
+        if spacecraft == "solo":
+            spacecraft_input_name = "Solar Orbiter"
+        elif spacecraft == "sta":
+            spacecraft_input_name = "STEREO-A"
+        elif spacecraft == "stb":
+            spacecraft_input_name = "STEREO-B"
+        else:
+            spacecraft_input_name = spacecraft.upper()
+
+        # get (lon, lat, radius) in (deg, deg, AU) in Stonyhurst coordinates:
+        # e.g. 'Solar Orbiter', 'STEREO-A', 'STEREO-B', 'SOHO', 'PSP'
+        position = get_horizons_coord(spacecraft_input_name, self.start_date)
+        radial_distance_value = np.round(position.radius.value,2)
 
         METERS_PER_AU = 1 * u.AU.to(u.m)
 
@@ -1323,13 +1379,16 @@ class Event:
             sc_identifier = "STEREO-A" if spacecraft[-1] == "a" else "STEREO-B"
 
         if self.spacecraft == "soho":
+            # ERNE-HED (only protons)
             if instrument.lower() == "erne":
                 particle_data = self.current_df_i
                 s_identifier = "protons"
-            if instrument.lower() == "ephin":
+            # EPHIN (only electrons)
+            else:
                 particle_data = self.current_df_e
                 s_identifier = "electrons"
-            sc_identifier = "SOHO"
+            sc_identifier = spacecraft.upper()
+
 
         # make a copy to make sure original data is not altered
         dataframe = particle_data.copy()
@@ -1342,20 +1401,34 @@ class Event:
         stepsize = 0.05
         min_slider_val, max_slider_val = 0.0, 1.55
 
-        # only the selected channels will be plotted
+        # Only the selected channels will be plotted
         if selection is not None:
-            selected_channels = dataframe.columns[selection[0]:selection[1]]
+
+            # len==3 means that we only choose every selection[2]:th channel 
+            if len(selection) == 3:
+                channel_indices = [i for i in range(selection[0],selection[1],selection[2])]
+                selected_channels = [channel for channel in dataframe.columns[channel_indices]]
+            else:
+                channel_indices = [i for i in range(selection[0],selection[1])]
+                selected_channels = dataframe.columns[selection[0]:selection[1]]
         else:
             selected_channels = dataframe.columns
+            channel_indices = [i for i in range(len(selected_channels))]
 
         # Change 0-values to nan purely for plotting purposes, since we're not doing any
         # calculations with them
         dataframe[dataframe[selected_channels] == 0] = np.nan
 
-        # channel energy strs:
+        # Get the channel numbers (not the indices!)
+        channel_nums = [int(name.split('_')[-1]) for name in selected_channels]
+
+        # Channel energy values as strings:
         channel_energy_strs = self.get_channel_energy_values("str")
         if selection is not None:
-            channel_energy_strs = channel_energy_strs[slice(selection[0], selection[1])]
+            if len(selection) == 3:
+                channel_energy_strs = channel_energy_strs[slice(selection[0], selection[1], selection[2])]
+            else:
+                channel_energy_strs = channel_energy_strs[slice(selection[0], selection[1])]
 
         # creation of the figure
         fig, ax = plt.subplots(figsize=(9, 6))
@@ -1403,8 +1476,8 @@ class Event:
             series_norm.append(series_normalized)
 
             # save the plotted lines, NOTICE that they come inside a list of len==1
-            p1 = ax.step(series.index, series.values, c=f"C{i}", visible=True, label=channel_energy_strs[i])
-            p2 = ax.step(series_normalized.index, series_normalized.values, c=f"C{i}", visible=False)  # normalized lines are initially hidden
+            p1 = ax.step(series.index, series.values, c=f"C{i}", visible=True, label = f"{channel_nums[i]}: {channel_energy_strs[i]}")
+            p2 = ax.step(series_normalized.index, series_normalized.values, c=f"C{i}", visible=False) # normalized lines are initially hidden
 
             # store plotted line objects for later referencing
             plotted_natural.append(p1[0])
@@ -1414,26 +1487,27 @@ class Event:
 
         # widget objects, slider and button
         style = {'description_width': 'initial'}
-        slider = widgets.FloatSlider(value=min_slider_val,
-                                     min=min_slider_val,
-                                     max=max_slider_val,
-                                     step=stepsize,
-                                     continuous_update=True,
-                                     description="Path length L [AU]: ",
-                                     style=style
-                                     )
+        slider = widgets.FloatSlider(value = min_slider_val,
+                                    min = min_slider_val,
+                                    max = max_slider_val,
+                                    step = stepsize,
+                                    continuous_update = True,
+                                    description = "Path length L [AU]: ",
+                                    style=style
+                                    )
 
-        button = widgets.Checkbox(value=False,
-                                  description="Normalize",
-                                  indent=True
-                                  )
+        button = widgets.Checkbox(value = False,
+                                description = "Normalize",
+                                indent=True
+                                )
 
         # A box for the path length
-        path_label = f"L = {slider.value} AU"
-        text = plt.text(0.85, 0.03, path_label, transform=ax.transAxes, bbox=dict(boxstyle="square",
-                                                                                  ec=(0., 0., 0.),
-                                                                                  fc=(1., 1.0, 1.0),
-                                                                                  ))
+        path_label = f"R={radial_distance_value:.2f} AU\nL = {slider.value} AU"
+        text = plt.text(0.02,0.03, path_label, transform=ax.transAxes, bbox=dict(boxstyle="square",
+                                                                 ec=(0., 0., 0.),
+                                                                 fc=(1., 1.0, 1.0),
+                                                                 ))
+
 
         # timeshift connects the slider to the shifting of the plotted curves
         def timeshift(sliderobject):
@@ -1458,10 +1532,11 @@ class Event:
                 line.set_xdata(line.get_xdata() - pd.Timedelta(seconds=timedelta_sec))
 
             # Update the path label artist
-            text.set_text(f"L = {slider.value} AU")
+            text.set_text(f"R={radial_distance_value:.2f} AU\nL = {slider.value} AU")
 
             # Effectively this refreshes the figure
             fig.canvas.draw_idle()
+
 
         # this function connects the button to switching visibility of natural / normed curves
         def normalize_axes(button):
@@ -1482,13 +1557,16 @@ class Event:
             # Effectively this refreshes the figure
             fig.canvas.draw_idle()
 
+
+
         slider.observe(timeshift, names="value")
         display(slider)
-
+        
         button.observe(normalize_axes)
         display(button)
 
-    def get_channel_energy_values(self, returns="num"):
+
+    def get_channel_energy_values(self, returns: str = "num") -> list:
         """
         A class method to return the energies of each energy channel in either str or numerical form.
 
@@ -1548,7 +1626,7 @@ class Event:
             if self.sensor.lower() == "erne":
                 energy_ranges = self.current_energies["channels_dict_df_p"]["ch_strings"].values
             if self.sensor.lower() == "ephin":
-                energy_ranges = self.current_energies.values
+                energy_ranges = [val for val in self.current_energies.values()]
 
         # Check what to return before running calculations
         if returns == "str":
@@ -1557,19 +1635,24 @@ class Event:
         lower_bounds, higher_bounds = [], []
         for energy_str in energy_ranges:
 
-            lower_bound, temp = energy_str.split('-')
+            # Sometimes there is no hyphen, but then it's not a range of energies
+            try:
+                lower_bound, temp = energy_str.split('-')
+            except ValueError:
+                continue
+
             try:
                 higher_bound, energy_unit = temp.split(' ')
 
-            # It could be that THE STRINGS ARE NOT IN A STANDARD FORMAT, so check if
+            # It could be that the strings are not in a standard format, so check if
             # there is an empty space before the second energy value
             except ValueError:
 
                 try:
                     _, higher_bound, energy_unit = temp.split(' ')
 
-                # It could even be that FOR SOME GODFORSAKEN REASON there are empty spaces
-                # between the numbers themselves
+                # It could even be that for some godforsaken reason there are empty spaces
+                # between the numbers themselves, so take care of that too
                 except ValueError:
                     higher_bound, energy_unit = temp.split(' ')[1], temp.split(' ')[2]
 
@@ -1583,10 +1666,15 @@ class Event:
         if energy_unit == "keV":
             lower_bounds, higher_bounds = lower_bounds * 1e3, higher_bounds * 1e3
 
-        if energy_unit == "MeV":
+        elif energy_unit == "MeV":
+            lower_bounds, higher_bounds = lower_bounds * 1e6, higher_bounds * 1e6
+
+        # This only happens with ephin, which has MeV as the unit of energy
+        else:
             lower_bounds, higher_bounds = lower_bounds * 1e6, higher_bounds * 1e6
 
         return lower_bounds, higher_bounds
+
 
     def calculate_particle_speeds(self):
         """
@@ -1616,6 +1704,15 @@ class Event:
         beta = [np.sqrt(1-((e_J/mass_energy + 1)**(-2))) for e_J in e_Joule]
 
         return np.array(beta)*const.c.value
+
+    
+    def print_energies(self):
+    
+        energy_strs = self.get_channel_energy_values("str")
+        
+        print(f"{self.spacecraft}, {self.sensor}:\n")
+        for line in energy_strs:
+            print(line)
 
 
 def flux2series(flux, dates, cadence=None):
