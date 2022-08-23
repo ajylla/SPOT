@@ -1782,12 +1782,29 @@ class Event:
 
     
     def print_energies(self):
-    
+        """
+        Prints out the channel name / energy range pairs 
+        """
+
+        # This has to be run first, otherwise self.current_df does not exist
+        self.choose_data(self.viewing)
+
+        if self.species in ['e', "electron"]:
+            channel_names = self.current_df_e.columns
+        if self.species in ['p', 'i', 'H', "proton", "ion"]:
+            channel_names = self.current_df_i.columns
+
+        # Extract only the numbers from channel names
+        if self.spacecraft in ["solo", "sta", "stb"] or self.sensor == "erne":
+            channel_numbers = [name.split('_')[-1] for name in channel_names]
+        if self.sensor == "ephin":
+            channel_numbers = [name.split('E')[-1] for name in channel_names]
+
         energy_strs = self.get_channel_energy_values("str")
         
         print(f"{self.spacecraft}, {self.sensor}:\n")
-        for line in energy_strs:
-            print(line)
+        for i, energy_range in enumerate(energy_strs):
+            print(f"{channel_numbers[i]}: {energy_range}")
 
 
 def flux2series(flux, dates, cadence=None):
