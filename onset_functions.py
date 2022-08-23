@@ -1,7 +1,6 @@
 
 import os
 import datetime
-from turtle import position
 # from turtle import speed
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -1196,7 +1195,7 @@ class Event:
         return flux_series, onset_stats, onset_found, peak_flux, peak_time, fig, bg_mean
 
 
-    def dynamic_spectrum(self, view, cmap: str = 'magma', xlim: tuple = None, resample: str = None, save: bool = False) -> None:
+    def dynamic_spectrum(self, view, cmap:str='magma', xlim:tuple=None, resample:str=None, save:bool=False) -> None:
         """
         Shows all the different energy channels in a single 2D plot, and color codes the corresponding intensity*energy^2 by a colormap.
 
@@ -1371,7 +1370,7 @@ class Event:
         plt.show()
 
 
-    def tsa_plot(self, view, selection = None, xlim = None, resample = None):
+    def tsa_plot(self, view, selection=None, xlim=None, resample=None):
         """
         Makes an interactive time-shift plot
 
@@ -1448,8 +1447,8 @@ class Event:
             if instrument.lower() == "erne":
                 particle_data = self.current_df_i
                 s_identifier = "protons"
-            # EPHIN (only electrons)
-            else:
+            # EPHIN, as of now only electrons, could be extended to protons in the future
+            if instrument.lower() == "ephin":
                 particle_data = self.current_df_e
                 s_identifier = "electrons"
             sc_identifier = spacecraft.upper()
@@ -1553,18 +1552,18 @@ class Event:
         # widget objects, slider and button
         style = {'description_width': 'initial'}
         slider = widgets.FloatSlider(value = min_slider_val,
-                                    min = min_slider_val,
-                                    max = max_slider_val,
-                                    step = stepsize,
-                                    continuous_update = True,
-                                    description = "Path length L [AU]: ",
-                                    style=style
-                                    )
+                                     min = min_slider_val,
+                                     max = max_slider_val,
+                                     step = stepsize,
+                                     continuous_update = True,
+                                     description = "Path length L [AU]: ",
+                                     style = style
+                                     )
 
         button = widgets.Checkbox(value = False,
-                                description = "Normalize",
-                                indent=True
-                                )
+                                  description = "Normalize",
+                                  indent = True
+                                  )
 
         # A box for the path length
         path_label = f"R={radial_distance_value:.2f} AU\nL = {slider.value} AU"
@@ -1631,7 +1630,7 @@ class Event:
         display(button)
 
 
-    def get_channel_energy_values(self, returns: str = "num") -> list:
+    def get_channel_energy_values(self, returns:str="num") -> list:
         """
         A class method to return the energies of each energy channel in either str or numerical form.
 
@@ -1751,10 +1750,10 @@ class Event:
         if self.species in ['p', "ion", 'H']:
             m_species = const.m_p.value
 
-        C_SQUARE = const.c.value*const.c.value
+        C_SQUARED = const.c.value*const.c.value
 
         # E=mc^2, a fundamental property of any object with mass
-        mass_energy = m_species*C_SQUARE  # e.g. 511 keV/c for electrons
+        mass_energy = m_species*C_SQUARED  # e.g. 511 keV/c for electrons
 
         # Get the energies of each energy channel, to calculate the mean energy of particles and ultimately
         # To get the dimensionless speeds of the particles (beta)
