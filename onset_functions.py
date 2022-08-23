@@ -1701,7 +1701,9 @@ class Event:
             if self.sensor.lower() == "erne":
                 energy_ranges = self.current_energies["channels_dict_df_p"]["ch_strings"].values
             if self.sensor.lower() == "ephin":
-                energy_ranges = [val for val in self.current_energies.values()]
+                # Choose only the 4 first channels / descriptions, since I only know of 
+                # E150, E300, E1300 and E3000. The rest are unknown to me. 
+                energy_ranges = [val for val in self.current_energies.values()][:4]
 
         # Check what to return before running calculations
         if returns == "str":
@@ -1714,6 +1716,8 @@ class Event:
             try:
                 lower_bound, temp = energy_str.split('-')
             except ValueError:
+                lower_bounds.append(np.nan)
+                higher_bounds.append(np.nan)
                 continue
 
             try:
@@ -1791,20 +1795,34 @@ class Event:
 
         if self.species in ['e', "electron"]:
             channel_names = self.current_df_e.columns
+            SOLO_EPT_CHANNELS_AMOUNT = 34
+            SOLO_HET_CHANNELS_AMOUNT = 4
         if self.species in ['p', 'i', 'H', "proton", "ion"]:
             channel_names = self.current_df_i.columns
+            SOLO_EPT_CHANNELS_AMOUNT = 64
+            SOLO_HET_CHANNELS_AMOUNT = 36
 
         # Extract only the numbers from channel names
-        if self.spacecraft in ["solo", "sta", "stb"] or self.sensor == "erne":
+        if self.spacecraft == "solo":
+            if self.sensor == "ept":
+                channel_names = [name[1] for name in channel_names[:SOLO_EPT_CHANNELS_AMOUNT]]
+                channel_numbers = [name.split('_')[-1] for name in channel_names]
+            if self.sensor == "het":
+                channel_names = [name[1] for name in channel_names[:SOLO_HET_CHANNELS_AMOUNT]]
+                channel_numbers = [name.split('_')[-1] for name in channel_names]
+
+        if self.spacecraft in ["sta", "stb"] or self.sensor == "erne":
             channel_numbers = [name.split('_')[-1] for name in channel_names]
+
         if self.sensor == "ephin":
             channel_numbers = [name.split('E')[-1] for name in channel_names]
 
         energy_strs = self.get_channel_energy_values("str")
         
         print(f"{self.spacecraft}, {self.sensor}:\n")
+        print("Channel number | Energy range")
         for i, energy_range in enumerate(energy_strs):
-            print(f"{channel_numbers[i]}: {energy_range}")
+            print(f" {channel_numbers[i]}  :  {energy_range}")
 
 
 def flux2series(flux, dates, cadence=None):
