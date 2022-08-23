@@ -1128,18 +1128,22 @@ class Event:
                     en_channel_string = self.current_e_energies['channels_dict_df']['Bins_Text'][f'ENERGY_{channels}']
 
         if(self.spacecraft.lower() == 'bepi'):
-            # convert single-element "channels" list to integer
             if type(channels) == list:
                 if len(channels) == 1:
+                    # convert single-element "channels" list to integer
                     channels = channels[0]
+                    if(self.species == 'e'):
+                        df_flux = self.current_df_e[f'E{channels}']
+                        en_channel_string = self.current_energies['Energy_Bin_str'][f'E{channels}']
+                    if(self.species in ['p', 'i']):
+                        df_flux = self.current_df_i[f'P{channels}']
+                        en_channel_string = self.current_energies['Energy_Bin_str'][f'P{channels}']
                 else:
-                    print("No multi-channel support for Bepi/SIXS included yet! Select only one single channel.")
-            if(self.species == 'e'):
-                df_flux = self.current_df_e[f'E{channels}']
-                en_channel_string = self.current_energies['Energy_Bin_str'][f'E{channels}']
-            if(self.species in ['p', 'i']):
-                df_flux = self.current_df_i[f'P{channels}']
-                en_channel_string = self.current_energies['Energy_Bin_str'][f'P{channels}']
+                    if(self.species == 'e'):
+                        df_flux, en_channel_string = calc_av_en_flux_sixs(self.current_df_e, channels, self.species)
+                    if(self.species in ['p', 'i']):
+                        df_flux, en_channel_string = calc_av_en_flux_sixs(self.current_df_i, channels, self.species)
+
 
         if(self.spacecraft.lower() == 'psp'):
             if(self.sensor.lower() == 'isois-epihi'):
@@ -1862,3 +1866,56 @@ def bepi_sixs_load(startdate, enddate, side, path):
                      "Ion_Bins_Low_Energy": np.array([0.001, 1.088, 1.407, 2.139, 3.647, 7.533, 13.211, 22.606, 29.246]),
                      "Ion_Bins_High_Energy": np.array([1.254, 1.311, 1.608, 2.388, 4.241, 8.534, 15.515, 28.413, 40.0])}
     return df, channels_dict
+
+
+def calc_av_en_flux_sixs(df, channel, species):
+    """
+    This function averages the flux of two energy channels of BepiColombo/SIXS into a combined energy channel
+    channel numbers counted from 1
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing HET data
+    channel : int or list
+        energy channel or list with first and last channel to be used
+    species : string
+        'e', 'electrons', 'p', 'protons'
+
+    Returns
+    -------
+    flux: pd.DataFrame
+        channel-averaged flux
+    en_channel_string: str
+        string containing the energy information of combined channel
+    """
+
+    # define constant geometric factors
+    GEOMFACTOR_PROT8 = 5.97E-01
+    GEOMFACTOR_PROT9 = 4.09E+00
+    GEOMFACTOR_ELEC5 = 1.99E-02
+    GEOMFACTOR_ELEC6 = 1.33E-01
+    GEOMFACTOR_PROT_COMB89 = 3.34
+    GEOMFACTOR_ELEC_COMB56 = 0.0972
+
+    if species in ['p', 'protons']:
+        if channel == [8, 9]:
+            countrate = df['P8'] * GEOMFACTOR_PROT8 + df['P9'] * GEOMFACTOR_PROT9
+            flux = countrate / GEOMFACTOR_PROT_COMB89
+            en_channel_string = '37 MeV'
+        else:
+            print('No valid channel combination selected.')
+            flux = pd.Series()
+            en_channel_string = ''
+
+    if species in ['e', 'electrons']:
+        if channel == [5, 6]:
+            countrate = df['E5'] * GEOMFACTOR_ELEC5 + df['E6'] * GEOMFACTOR_ELEC6
+            flux = countrate / GEOMFACTOR_ELEC_COMB56
+            en_channel_string = '1.4 MeV'
+        else:
+            print('No valid channel combination selected.')
+            flux = pd.Series()
+            en_channel_string = ''
+
+    return flux, en_channel_string
