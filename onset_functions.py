@@ -513,9 +513,14 @@ class Event:
 
         if type(en_channel) == list:
 
-            en_channel_string = en_str[en_channel[0]][0].split()[0] + ' - '\
-                + en_str[en_channel[-1]][0].split()[2] + ' ' +\
-                en_str[en_channel[-1]][0].split()[3]
+            # An IndexError here is caused by invalid channel choice
+            try:
+                en_channel_string = en_str[en_channel[0]][0].split()[0] + ' - '\
+                    + en_str[en_channel[-1]][0].split()[2] + ' ' +\
+                    en_str[en_channel[-1]][0].split()[3]
+
+            except IndexError:
+                raise Exception(f"{en_channel} is an invalid channel or a combination of channels!")
 
             if len(en_channel) > 2:
 
@@ -614,9 +619,14 @@ class Event:
 
         if type(en_channel) == list:
 
-            en_channel_string = en_str[en_channel[0]][0].split()[0] + ' - '\
-                + en_str[en_channel[-1]][0].split()[2] + ' '\
-                + en_str[en_channel[-1]][0].split()[3]
+            # An IndexError here is caused by invalid channel choice
+            try:
+                en_channel_string = en_str[en_channel[0]][0].split()[0] + ' - '\
+                    + en_str[en_channel[-1]][0].split()[2] + ' '\
+                    + en_str[en_channel[-1]][0].split()[3]
+
+            except IndexError:
+                raise Exception(f"{en_channel} is an invalid channel or a combination of channels!")
 
             if len(en_channel) > 2:
 
@@ -1055,61 +1065,75 @@ class Event:
 
         if(self.spacecraft[:2] == 'st'):
 
-            if(self.sensor == 'het'):
+            # Super ugly implementation, but easiest to just wrap both sept and het calculators
+            # in try block. KeyError is caused by an invalid channel choice.
+            try:
 
-                if(self.species in ['p', 'i']):
+                if(self.sensor == 'het'):
 
-                    df_flux, en_channel_string =\
-                        calc_av_en_flux_ST_HET(self.current_df_i,
-                                               self.current_energies['channels_dict_df_p'],
-                                               channels,
-                                               species='p')
-                elif(self.species == 'e'):
+                    if(self.species in ['p', 'i']):
 
-                    df_flux, en_channel_string =\
-                        calc_av_en_flux_ST_HET(self.current_df_e,
-                                               self.current_energies['channels_dict_df_e'],
-                                               channels,
-                                               species='e')
+                        df_flux, en_channel_string =\
+                            calc_av_en_flux_ST_HET(self.current_df_i,
+                                                self.current_energies['channels_dict_df_p'],
+                                                channels,
+                                                species='p')
+                    elif(self.species == 'e'):
 
-            elif(self.sensor == 'sept'):
+                        df_flux, en_channel_string =\
+                            calc_av_en_flux_ST_HET(self.current_df_e,
+                                                self.current_energies['channels_dict_df_e'],
+                                                channels,
+                                                species='e')
 
-                if(self.species in ['p', 'i']):
+                elif(self.sensor == 'sept'):
 
-                    df_flux, en_channel_string =\
-                        calc_av_en_flux_SEPT(self.current_df_i,
-                                             self.current_i_energies,
-                                             channels)
-                elif(self.species == 'e'):
+                    if(self.species in ['p', 'i']):
 
-                    df_flux, en_channel_string =\
-                        calc_av_en_flux_SEPT(self.current_df_e,
-                                             self.current_e_energies,
-                                             channels)
+                        df_flux, en_channel_string =\
+                            calc_av_en_flux_SEPT(self.current_df_i,
+                                                self.current_i_energies,
+                                                channels)
+                    elif(self.species == 'e'):
+
+                        df_flux, en_channel_string =\
+                            calc_av_en_flux_SEPT(self.current_df_e,
+                                                self.current_e_energies,
+                                                channels)
+            
+            except KeyError:
+                raise Exception(f"{channels} is an invalid channel or a combination of channels!")
+
 
         if(self.spacecraft == 'soho'):
 
-            if(self.sensor == 'erne'):
+            # A KeyError here is caused by invalid channel
+            try:
 
-                if(self.species in ['p', 'i']):
+                if(self.sensor == 'erne'):
 
-                    df_flux, en_channel_string =\
-                        calc_av_en_flux_ERNE(self.current_df_i,
-                                             self.current_energies['channels_dict_df_p'],
-                                             channels,
-                                             species='p',
-                                             sensor='HET')
+                    if(self.species in ['p', 'i']):
 
-            if(self.sensor == 'ephin'):
-                # convert single-element "channels" list to integer
-                if type(channels) == list:
-                    if len(channels) == 1:
-                        channels = channels[0]
-                    else:
-                        print("No multi-channel support for SOHO/EPHIN included yet! Select only one single channel.")
-                if(self.species == 'e'):
-                    df_flux = self.current_df_e[f'E{channels}']
-                    en_channel_string = self.current_energies[f'E{channels}']
+                        df_flux, en_channel_string =\
+                            calc_av_en_flux_ERNE(self.current_df_i,
+                                                self.current_energies['channels_dict_df_p'],
+                                                channels,
+                                                species='p',
+                                                sensor='HET')
+
+                if(self.sensor == 'ephin'):
+                    # convert single-element "channels" list to integer
+                    if type(channels) == list:
+                        if len(channels) == 1:
+                            channels = channels[0]
+                        else:
+                            print("No multi-channel support for SOHO/EPHIN included yet! Select only one single channel.")
+                    if(self.species == 'e'):
+                        df_flux = self.current_df_e[f'E{channels}']
+                        en_channel_string = self.current_energies[f'E{channels}']
+
+            except KeyError:
+                raise Exception(f"{channels} is an invalid channel or a combination of channels!")
 
         if(self.spacecraft == 'wind'):
             if(self.sensor == '3dp'):
