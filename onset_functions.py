@@ -997,17 +997,45 @@ class Event:
 
     def analyse(self, viewing, bg_start=None, bg_length=None, background_range=None, resample_period=None,
                 channels=[0, 1], yscale='log', cusum_window=30, xlim=None, x_sigma=2):
+        """
+        This method runs Poisson-CUSUM onset analysis for the Event object.
+
+        Parameters:
+        -----------
+        viewing : str
+                        The viewing direction of the sensor.
+        bg_start : int or float, default None
+                        The start of background averaging from the start of the time series data in hours.
+        bg_length : int or float, default None
+                        The length of  the background averaging period in hours.
+        background_range : tuple or list of datetimes with len=2, default None
+                        The time range of background averaging. If defined, takes precedence over bg_start and bg_length.
+        resample_period : str, default None
+                        Pandas-compatible time string to average data. e.g. '10s' for 10 seconds or '2min' for 1 minutes.
+        channels : int or list of 2 ints, default [0,1]
+                        Index or a combination of indices to plot a channel or combination of channels.
+        yscale : str, default 'log'
+                        Matplotlib-compatible string for the scale of the y-axis. e.g. 'log' or 'linear'
+        cusum_window : int, default 30
+                        The amount of consecutive data points above the threshold before identifying an onset.
+        xlim : tuple or list, default None
+                        Panda-compatible datetimes or strings to assert the left and right boundary of the x-axis of the plot.
+        x_sigma : int, default 2
+                        The multiplier of m_d in the definition of the control parameter k in Poisson-CUSUM method.
+        """
 
         # This check was initially transforming the 'channels' integer to a tuple of len==1, but that
         # raised a ValueError with solo/ept. However, a list of len==1 is somehow okay.
         if isinstance(channels, int):
             channels = [channels]
 
-        # # Check if background is separated from plot range by over a day, issue a warning if so, but don't 
-        # if (background_range[0] < xlim[0] - datetime.timedelta(days=1) and background_range[0] < xlim[1] - datetime.timedelta(days=1) ) or \
-        #     (background_range[1] > xlim[0] + datetime.timedelta(days=1) and background_range[1] > xlim[1] + datetime.timedelta(days=1) ):
-        #     background_warning = "NOTICE that your background_range is separated from plot_range by over a day.\nIf this was intentional you may ignore this warning."
-        #     warnings.warn(message=background_warning)
+        if (background_range is not None) and (xlim is not None):
+         # Check if background is separated from plot range by over a day, issue a warning if so, but don't 
+            if (background_range[0] < xlim[0] - datetime.timedelta(days=1) and background_range[0] < xlim[1] - datetime.timedelta(days=1) ) or \
+                (background_range[1] > xlim[0] + datetime.timedelta(days=1) and background_range[1] > xlim[1] + datetime.timedelta(days=1) ):
+                background_warning = "NOTICE that your background_range is separated from plot_range by over a day.\nIf this was intentional you may ignore this warning."
+                warnings.warn(message=background_warning)
+
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') \
                 or (self.spacecraft.lower() == 'psp' and self.sensor.startswith('isois')) \
