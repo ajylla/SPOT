@@ -1003,11 +1003,12 @@ class Event:
         if isinstance(channels, int):
             channels = [channels]
 
-        # # Check if background is separated from plot range by over a day, issue a warning if so, but don't 
-        # if (background_range[0] < xlim[0] - datetime.timedelta(days=1) and background_range[0] < xlim[1] - datetime.timedelta(days=1) ) or \
-        #     (background_range[1] > xlim[0] + datetime.timedelta(days=1) and background_range[1] > xlim[1] + datetime.timedelta(days=1) ):
-        #     background_warning = "NOTICE that your background_range is separated from plot_range by over a day.\nIf this was intentional you may ignore this warning."
-        #     warnings.warn(message=background_warning)
+        if background_range is not None:
+         # Check if background is separated from plot range by over a day, issue a warning if so, but don't 
+            if (background_range[0] < xlim[0] - datetime.timedelta(days=1) and background_range[0] < xlim[1] - datetime.timedelta(days=1) ) or \
+                (background_range[1] > xlim[0] + datetime.timedelta(days=1) and background_range[1] > xlim[1] + datetime.timedelta(days=1) ):
+                background_warning = "NOTICE that your background_range is separated from plot_range by over a day.\nIf this was intentional you may ignore this warning."
+                warnings.warn(message=background_warning)
 
 
         if (self.spacecraft[:2].lower() == 'st' and self.sensor == 'sept') \
