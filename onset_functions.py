@@ -2,7 +2,6 @@
 import os
 import datetime
 import warnings
-# from turtle import speed
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.colors as cl
@@ -1317,6 +1316,7 @@ class Event:
             if instrument.lower() == "ephin":
                 particle_data = self.current_df_e
                 s_identifier = "electrons"
+                warnings.warn('SOHO/EPHIN data is not fully implemented yet!')
 
         # These instruments will have keVs on their y-axis
         LOW_ENERGY_SENSORS = ("sept", "ept")
