@@ -92,11 +92,11 @@ def inf_inj_time(spacecraft, onset_time, species, kinetic_energy, sw_speed):
         datetime.datetime: inferred injection time.
     '''
 
-    if(type(kinetic_energy)==float or type(kinetic_energy)==int):
+    if not type(kinetic_energy)==u.quantity.Quantity:
         
         kinetic_energy = kinetic_energy * u.MeV
 
-    if(type(sw_speed)==float or type(sw_speed)==int):
+    if not type(sw_speed)==u.quantity.Quantity:
 
         sw_speed = sw_speed * u.km/u.s
 
