@@ -1529,7 +1529,7 @@ class Event:
         shift_coefficients = [METERS_PER_AU/v for v in particle_speeds]
 
         stepsize = 0.05
-        min_slider_val, max_slider_val = 0.0, 1.55
+        min_slider_val, max_slider_val = 0.0, 2.55
 
         # Only the selected channels will be plotted
         if selection is not None:
