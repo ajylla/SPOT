@@ -1,8 +1,6 @@
 
 import os
 import datetime
-from socketserver import ForkingTCPServer
-from tkinter import font
 import warnings
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -25,6 +23,12 @@ from wind_3dp_loader import wind3dp_load
 
 from IPython.core.display import display
 
+# This is to get rid of this specific warning:
+# /home/chospa/Documents/Github/serpentine/notebooks/sep_analysis_tools/read_swaves.py:96: UserWarning: The input coordinates to pcolormesh are interpreted as 
+# cell centers, but are not monotonically increasing or decreasing. This may lead to incorrectly calculated cell edges, in which 
+# case, please supply explicit cell edges to pcolormesh. 
+# colormesh = ax.pcolormesh( time_arr, freq[::-1], data_arr[::-1], vmin = 0, vmax = 0.5*np.max(data_arr), cmap = 'inferno' )
+warnings.filterwarnings("ignore", category=UserWarning)
 
 class Event:
 
@@ -1423,7 +1427,7 @@ class Event:
 
             # Colorbar
             cb = fig.colorbar(colormesh, orientation='vertical', ax=ax[0])
-            clabel = "Intensity?"
+            clabel = "Intensity"
             cb.set_label(clabel)
 
 
