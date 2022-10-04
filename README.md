@@ -1,7 +1,6 @@
 ### Update 4 October 2022
-The analysis functions used in the Jupyter Notebooks were moved from separated files (i.e., `onset_functions.py`, `onset_widgets.py`, `read_swaves.py`) 
-to the package [SEPpy](https://github.com/serpentine-h2020/SEPpy) ([PyPI entry](https://pypi.org/project/seppy/)). 
-In the course of this, all .py files except `inf_inj_time.py` became obsolote, but are kept for backwards compatibility. 
+The analysis functions used in the Jupyter Notebooks were moved from separated files (i.e., `inf_inj_time.py`, `onset_functions.py`, `onset_widgets.py`, `read_swaves.py`) to the package [SEPpy](https://github.com/serpentine-h2020/SEPpy) ([PyPI entry](https://pypi.org/project/seppy/)). 
+In the course of this, all .py files became obsolote, but are kept for backwards compatibility. 
 
 Please install the latest version of SEPpy with `pip install seppy` and change the imports in the Notebooks from:
   ``` python
@@ -10,7 +9,7 @@ Please install the latest version of SEPpy with `pip install seppy` and change t
   ```
   to:
   ``` python
-  from seppy.tools import Event
+  from seppy.tools import Event, inf_inj_time
   import seppy.tools.widgets as w
   import datetime, os
   ```
